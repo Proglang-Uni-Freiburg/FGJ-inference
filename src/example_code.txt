@@ -1,0 +1,27 @@
+class Pair<T, U> extends Object {
+    T fst;
+    U snd;
+}
+
+class String extends Object {}
+
+class StringAnd<V> extends Pair<String, V> {
+    String fst;
+    V snd;
+}
+
+class Num extends Object {}
+
+class Int extends Object {}
+
+class Float extends Object {}
+
+class IntAnd<V> extends Pair<Int, V> {
+    Int fst;
+    V snd;
+}
+
+class NumAnd<V extends Num, U> extends Pair<V, U> {
+    V fst;
+    U snd;
+}
