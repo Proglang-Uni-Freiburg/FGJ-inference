@@ -13,6 +13,8 @@ def sub_single(T: FGJ.Type, X: FGJ.TypeVar, T_old: FGJ.Type) -> FGJ.Type:
             return T_old
         case FGJ.NonTypeVar(name, types):
             return FGJ.NonTypeVar(name, [sub_single(T, X, t) for t in types])
+        case _:
+            raise Exception(f"Arguments must be either TypeVar or NonTypeVar but is {type(T_old)}")
 
 
 def sub(Ts: list[FGJ.Type], Xs: list[FGJ.TypeVar], T_old: FGJ.Type) -> FGJ.Type:
@@ -51,13 +53,15 @@ def is_well_formed(t: FGJ.Type, Delta: FGJ.Delta, CT: FGJ.ClassTable) -> bool:
             return t in Delta.keys()
         case FGJ.NonTypeVar(name, ts):
             # recursivley checking all Types in ts
-            are_types_well_formed = all(is_well_formed(type) for type in ts)
+            are_types_well_formed = all(is_well_formed(type, Delta, CT) for type in ts)
             # pair types in ts and types in ns together
             class_def = CT[name]
             mapped = zip(class_def.generic_type_annotation.values(), ts)
             xs = list(class_def.generic_type_annotation.keys())
             are_types_subtypes = all(is_subtype(ti, sub(ts, xs, ni), Delta, CT) for (ni, ti) in mapped)
             return are_types_well_formed and are_types_subtypes
+        case _:
+            raise Exception("Type must either be TypeVar or NonTypeVar but is Type")
 
 
 def fields(t: FGJ.NonTypeVar, CT: FGJ.ClassTable) -> dict[str, FGJ.Type]:
@@ -68,9 +72,12 @@ def fields(t: FGJ.NonTypeVar, CT: FGJ.ClassTable) -> dict[str, FGJ.Type]:
             class_def = CT[name]
             typed_fields = class_def.typed_fields.items()
             xs = list(class_def.generic_type_annotation.keys())
-            subted_typed_fields = {sub(ts, xs, s): field for s, field in typed_fields}
+            subted_typed_fields = {field: sub(ts, xs, t) for field, t in typed_fields}
             super_class = class_def.superclass
-            return subted_typed_fields | fields(sub(ts, xs, super_class), CT)
+            subted = sub(ts, xs, super_class)
+            if type(subted) is not FGJ.NonTypeVar:
+                raise Exception("CANT GO HERE - BUT TYPECHECKING")
+            return subted_typed_fields | fields(subted, CT)
 
 
 def mtype(method_name: str, c: FGJ.NonTypeVar, CT: FGJ.ClassTable, PI: FGJ.Pi) -> Optional[FGJ.MethodSign]:
@@ -83,6 +90,9 @@ def mtype(method_name: str, c: FGJ.NonTypeVar, CT: FGJ.ClassTable, PI: FGJ.Pi) -
             method_signature = list(PI[(FGJ.ClassHeader(class_def.name, gen_type_ano), method_name)])[0] # Why Set? Get a random ano? ???
             xs = list(gen_type_ano.keys())
             subted_gen_type_ano = {sub(ts, xs, yi): sub(ts, xs, pi) for yi, pi in method_signature.gen_typ_ano.items()}
+            if type(subted_gen_type_ano) is not dict[FGJ.TypeVar, FGJ.NonTypeVar]:
+                raise Exception("CAN I COME HERE? - BUT TYPECHECKING")
+            # typechecker still isnt satisfied
             subted_arguments = [sub(ts, xs, ui) for ui in method_signature.types_of_arguments]
             subted_return_type = sub(ts, xs, method_signature.return_type)
             return FGJ.MethodSign(subted_gen_type_ano, subted_arguments, subted_return_type)
@@ -90,7 +100,10 @@ def mtype(method_name: str, c: FGJ.NonTypeVar, CT: FGJ.ClassTable, PI: FGJ.Pi) -
         case FGJ.NonTypeVar(name, ts):
             class_def = CT[name]
             xs = list(class_def.generic_type_annotation.keys())
-            return mtype(method_name, sub(ts, xs, class_def.superclass), PI)
+            subted = sub(ts, xs, class_def.superclass)
+            if type(subted) is not FGJ.NonTypeVar:
+                raise Exception("CANT GO HERE - BUT TYPECHECKER")
+            return mtype(method_name, subted, CT, PI)
 
 
 def is_valid_method_override(method_name: str, n: FGJ.NonTypeVar, method_sign_lower: FGJ.MethodSign, CT: FGJ.ClassTable, PI: FGJ.Pi) -> bool:
@@ -118,6 +131,8 @@ def bound(n: FGJ.Type, Delta: FGJ.Delta) -> FGJ.NonTypeVar:
             return Delta[n]
         case FGJ.NonTypeVar(_, _):
             return n
+        case _:
+            raise Exception("CANT GO HERE - BUT TYPECHECKER")
 
 
 def is_valid_downcast(c1: FGJ.NonTypeVar, c2: FGJ.NonTypeVar, CT: FGJ.ClassTable) -> bool:
@@ -126,9 +141,9 @@ def is_valid_downcast(c1: FGJ.NonTypeVar, c2: FGJ.NonTypeVar, CT: FGJ.ClassTable
             return True
         case _, FGJ.NonTypeVar("Object", _):
             return list(CT[c1.name].generic_type_annotation.keys()) == []
-        case FGJ.NonTypeVar("Object", _):
+        case FGJ.NonTypeVar("Object", _), _:
             return False
         case _, _ if CT[c1.name].superclass == c2:
             return list(CT[c1.name].generic_type_annotation.keys()) == CT[c1.name].superclass.types
         case _, _:
-            return is_valid_downcast(c1, CT[c1.name].superclass, CT) and is_valid_downcast(CT[c1.name].superclass, c2)
+            return is_valid_downcast(c1, CT[c1.name].superclass, CT) and is_valid_downcast(CT[c1.name].superclass, c2, CT)

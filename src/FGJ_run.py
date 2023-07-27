@@ -17,7 +17,7 @@ def run(file_path: str, out_file_path: str, to_stdout: bool):
         print(program)
     else:
         with open(out_file_path, "w") as file:
-            file.write(program)
+            file.write(str(program))
 
 
 if __name__ == "__main__":

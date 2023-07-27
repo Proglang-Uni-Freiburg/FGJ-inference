@@ -23,30 +23,30 @@ fresh_b = fresh("b")
 
 
 def FJType(Pi: FGJ.Pi, class_def: FGJ.ClassDef, CT: FGJ.ClassTable) -> tuple[FGJ_GT.lambdas, FGJ_GT.C]:
-    class_header = FGJ_GT.ClassHeaderA(class_def.name, class_def.generic_type_annotation)
-    l0s = dict()
-    C0 = set()
-    ls = dict()
-    Cm = set()
+    class_header = FGJ_GT.ClassHeaderA(class_def.name, {FGJ_GT.BoundedTypeVarA(x.name): FGJ_GT.NonTypeVarA(n.name, [FGJ_GT.to_TypeA(t) for t in n.types]) for x, n in class_def.generic_type_annotation.items()})
+    l0s: dict[tuple[FGJ_GT.ClassHeaderA, str], FGJ_GT.MethodSignA] = dict()
+    C0e: set[FGJ_GT.SubTypeC] = set()
+    ls: dict[tuple[FGJ_GT.ClassHeaderA, str], FGJ_GT.MethodSignA] = dict()
+    Cm: set[FGJ_GT.SubTypeC] = set()
     for method_def in class_def.methods.values():
         method_sign = AUX.mtype(method_def.name, class_def.superclass, CT, Pi)
         am = next(fresh_a)
         if method_sign:
             l0s[(class_header, method_def.name)] = FGJ_GT.MethodSignA(method_sign.gen_typ_ano, method_sign.types_of_arguments, am)
-            C0 |= FGJ_GT.SubTypeC(am, method_sign.return_type)
+            C0e |= {FGJ_GT.SubTypeC(am, method_sign.return_type)}
         else:
             ass = [next(fresh_a) for _ in method_def.typed_parameters]
             ls[(class_header, method_def.name)] = FGJ_GT.MethodSignA(dict(), ass, am)
             Cm |= {{FGJ_GT.SubTypeC(am, FGJ_GT.NonTypeVarA("Object", []))} | {FGJ_GT.SubTypeC(ai, FGJ_GT.NonTypeVarA("Object", [])) for ai in ass}}
     BigPi = Pi | l0s | ls
-    constraints = C0 | Cm | {TypeMethod(BigPi, class_header, method_def, CT) for method_def in class_def.methods.values()}
+    constraints = C0e | Cm | {TypeMethod(BigPi, class_header, method_def, CT) for method_def in class_def.methods.values()}
     return BigPi, constraints
 
 
 def TypeMethod(Pi: FGJ.Pi, class_header: FGJ_GT.ClassHeaderA, method_def: FGJ.MethodDef, CT: FGJ.ClassTable) -> FGJ_GT.C:
     method_sign = list(Pi[(class_header, method_def.name)])[0]  # ????
-    R, C = TypeExpr((Pi, {FGJ.Variable("this"): class_header} | {x: T for x, T in zip(method_def.typed_parameters.keys(), method_sign.types_of_arguments)}), method_def.body, CT)
-    return C | {FGJ_GT.SubTypeC(R, method_sign.return_type)}
+    Re, Ce = TypeExpr((Pi, {FGJ.Variable("this"): class_header} | {x: T for x, T in zip(method_def.typed_parameters.keys(), method_sign.types_of_arguments)}), method_def.body, CT)
+    return Ce | {FGJ_GT.SubTypeC(Re, method_sign.return_type)}
 
 
 def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tuple[FGJ_GT.TypeA, FGJ_GT.C]:
@@ -56,7 +56,7 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
             return µ(name), set()
 
         case FGJ.FieldLookup(e0, name):
-            R, Cr = TypeExpr(teta, e0)
+            Re, Cr = TypeExpr(teta, e0)
             a = next(fresh_a)
             oc = set()
             for class_def in CT.values():
@@ -64,13 +64,13 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
                     continue
                 a1s = [next(fresh_a) for _ in len(class_def.generic_type_annotation.values())]
                 xs = class_def.generic_type_annotation.keys()
-                oc |= {{FGJ_GT.SubTypeC(R, FGJ_GT.NonTypeVarA(class_def.name, a1s)),
+                oc |= {{FGJ_GT.SubTypeC(Re, FGJ_GT.NonTypeVarA(class_def.name, a1s)),
                         FGJ_GT.EqualC(a, AUX.sub(a1s, xs, class_def.typed_fields[name])),
                         } | {FGJ_GT.SubTypeC(ai, AUX.sub(a1s, xs, ni)) for ai, ni in zip(a1s, class_def.generic_type_annotation.values())}}
             return a, Cr | oc
 
         case FGJ.MethodLookup(e0, _, name, parameters):
-            R, Cr = TypeExpr(teta, e0)
+            Re, Cr = TypeExpr(teta, e0, CT)
             RiCi = dict(TypeExpr(teta, ei, CT) for ei in parameters)
             Ri = RiCi.keys()
             Ci = RiCi.values()
@@ -90,7 +90,7 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
                         t = method_sign.return_type
                         ass = [next(fresh_a) for _ in class_header.bounded_types]
                         bs = [next(fresh_b) for _ in class_header.bounded_types]
-                        c |= {{FGJ_GT.SubTypeC(R, FGJ_GT.NonTypeVarA(class_header.class_name, ai)) for ai in ass} |
+                        c |= {{FGJ_GT.SubTypeC(Re, FGJ_GT.NonTypeVarA(class_header.class_name, ai)) for ai in ass} |
                               {FGJ_GT.EqualC(a, AUX.sub(bs, ys, AUX.sub(ass, xs, t)))} |
                               {FGJ_GT.SubTypeC(Ri, AUX.sub(bs, ys, AUX.sub(ass, xs, ti))) for Ri, ti in zip(Ri, ts)} |
                               {FGJ_GT.SubTypeC(bi, AUX.sub(bs, ys, AUX.sub(ass, xs, pi))) for bi, pi in zip(bs, ps)} |
@@ -101,7 +101,7 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
         case FGJ.NewClass(type, parameters):
             RiCi = dict(TypeExpr(teta, expr, CT) for expr in parameters)
             ass = [next(fresh_a) for _ in parameters]
-            ca = FGJ.NonTypeVar(type.name, ass)
+            ca = FGJ_GT.NonTypeVarA(type.name, ass)
             typed_fields = AUX.fields(ca, CT)
             xs = CT[type.name].generic_type_annotation.keys()
             ns = CT[type.name].generic_type_annotation.values()
@@ -109,5 +109,64 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
             return ca, C | {ci for ci in RiCi.values()}
 
 
+# Constraint solving # laufzeit tot?
+
+def is_solved_form(C: FGJ_GT.C) -> bool:
+    as_12: list[str] = list()
+    as_34: list[str] = list()
+    for constraint in C:
+        match constraint:
+            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA()) if a not in as_34:
+                as_12.append(a)
+            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ_GT.NonTypeVarA()) if a not in as_12:
+                as_34.append(a)
+            case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA()) if a not in as_34:
+                as_12.append(a)
+            case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ_GT.NonTypeVarA(_, ts)) if FGJ_GT.TypeVarA(a) not in ts and a not in as_12:
+                as_34.append(a)
+            case _:
+                return False
+    return True
+
+
+def gen_C_prime(C: FGJ_GT.C) -> Generator[set[FGJ_GT.sc], Any, Any]:
+    sc_set: set[FGJ_GT.sc] = set()
+    oc_list: list[FGJ_GT.oc] = list()
+    for c in C:
+        match c:
+            case FGJ_GT.SubTypeC():
+                sc_set |= {c}
+            case FGJ_GT.EqualC():
+                sc_set |= {c}
+            case _:
+                oc_list += [c]
+    for oc in oc_list:
+        out_set: set[FGJ_GT.sc] = set()
+        for sci in oc:
+            out_set |= sci
+        yield out_set | sc_set
+
+
 def Unify(C: FGJ_GT.C, env: FGJ.Delta):
-    ...
+    for C_prime in gen_C_prime(C):
+        # step 1
+        changes = True
+        while changes:
+            changes = False
+            for constraint in C_prime:
+                match constraint:
+                    # adapt
+                    # reduce
+                    case FGJ_GT.SubTypeC(FGJ_GT.NonTypeVarA(c, ts), FGJ_GT.NonTypeVarA(d, us)) if c == d:
+                        C.remove(constraint)
+                        C |= {FGJ_GT.EqualC(ti, ui) for ti, ui in zip(ts, us)}
+                        changes = True
+                    # erase
+                    case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)) if a == b:
+                        C.remove(constraint)
+                        changes = True
+                    # swap
+                    case FGJ_GT.EqualC(FGJ_GT.NonTypeVarA(n, ts), FGJ_GT.TypeVarA(a)):
+                        C.remove(constraint)
+                        C.add(FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ_GT.NonTypeVarA(n, ts)))
+                        changes = True

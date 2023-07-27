@@ -11,12 +11,7 @@ class NonTypeVar(Type):
     name: str
     types: list['Type']
 
-    def __eq__(self, other: 'NonTypeVar'):
-        if self.name != other.name:
-            return False
-        return self.types == other.types
-        # Not needed because comparing two lists does exactly that
-        # return all(sti == oti for sti, oti in zip(self.types, other.types))
+    # __eq__ -> name == name => types == types?
 
     def __str__(self):
         return self.name + "<" + ', '.join(str(t) for t in self.types) + ">"
@@ -56,7 +51,7 @@ class FieldLookup(Expression):
 
     def __str__(self) -> str:
         expr = "(" + str(self.expression) + ")" if isinstance(self.expression, Cast) else str(self.expression)
-        return f"{expr}.{self.field}"
+        return f"{expr}.{self.field_name}"
 
 
 @dataclass(frozen=True)
@@ -68,7 +63,7 @@ class MethodLookup(Expression):
 
     def __str__(self) -> str:
         expr = "(" + str(self.expression) + ")" if isinstance(self.expression, Cast) else str(self.expression)
-        types = f"<{', '.join(self.list_of_types)}>" if self.list_of_types else ""
+        types = f"<{', '.join(str(t) for t in self.list_of_types)}>" if self.list_of_types else ""
         return f"{expr}.{self.method_name}{types}({', '.join(str(e) for e in self.parameters)})"
 
 
@@ -103,10 +98,10 @@ class MethodDef:
     body: Expression
 
     def __str__(self) -> str:
-        gta = "<" + ",".join(f"{k} <- {v}" for k, v in self.generic_type_annotation) + "> " if self.generic_type_annotation else ""
+        gta = "<" + ",".join(f"{k} <- {v}" for k, v in self.generic_type_annotation.items()) + "> " if self.generic_type_annotation else ""
         ret = str(self.return_type) + " " if self.return_type else ""
         out = f"{gta}{ret}{self.name}("
-        out += ', '.join(f'{argument_type + " " if argument_type else ""}{argument_name}' for argument_name, argument_type in self.typed_parameters.items())
+        out += ', '.join(f'{str(argument_type) + " " if argument_type else ""}{argument_name}' for argument_name, argument_type in self.typed_parameters.items())
         out += ") {\n\treturn " + str(self.body) + ";\n}"
         return out
 
@@ -124,7 +119,7 @@ class ClassDef:
         """
         Without Constructor
         """
-        gta = "<" + ",".join(f"{x} <- {y}" for x, y in self.generic_type_annotation) + ">" if self.generic_type_annotation else ""
+        gta = "<" + ",".join(f"{x} <- {y}" for x, y in self.generic_type_annotation.items()) + ">" if self.generic_type_annotation else ""
         out = f"class {self.name}{gta} extends {str(self.superclass)}" + " {"
         if self.typed_fields or self.methods:
             out += "\n"
@@ -137,13 +132,13 @@ class ClassDef:
         return out + "}"
 
 
-@dataclass
+@dataclass(frozen=True)
 class ClassHeader:
     class_name: str
     bounded_types: dict[TypeVar, NonTypeVar]
 
 
-@dataclass
+@dataclass(frozen=True)
 class MethodSign:
     gen_typ_ano: GenTypeAno
     types_of_arguments: list[Type]
