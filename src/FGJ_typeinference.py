@@ -32,12 +32,12 @@ def FJType(Pi: FGJ.Pi, class_def: FGJ.ClassDef, CT: FGJ.ClassTable) -> tuple[FGJ
         method_sign = AUX.mtype(method_def.name, class_def.superclass, CT, Pi)
         am = next(fresh_a)
         if method_sign:
-            l0s[(class_header, method_def.name)] = FGJ_GT.MethodSignA(method_sign.gen_typ_ano, method_sign.types_of_arguments, am)
-            C0e |= {FGJ_GT.SubTypeC(am, method_sign.return_type)}
+            l0s[(class_header, method_def.name)] = FGJ_GT.MethodSignA({FGJ_GT.BoundedTypeVarA(x.name): FGJ_GT.NonTypeVarA(n.name, [FGJ_GT.to_TypeA(t) for t in n.types]) for x, n in method_sign.gen_typ_ano.items()}, [FGJ_GT.to_TypeA(t) for t in method_sign.types_of_arguments], am)
+            C0e |= {FGJ_GT.SubTypeC(am, FGJ_GT.to_TypeA(method_sign.return_type))}
         else:
             ass = [next(fresh_a) for _ in method_def.typed_parameters]
             ls[(class_header, method_def.name)] = FGJ_GT.MethodSignA(dict(), ass, am)
-            Cm |= {{FGJ_GT.SubTypeC(am, FGJ_GT.NonTypeVarA("Object", []))} | {FGJ_GT.SubTypeC(ai, FGJ_GT.NonTypeVarA("Object", [])) for ai in ass}}
+            Cm |= {FGJ_GT.SubTypeC(am, FGJ_GT.NonTypeVarA("Object", []))} | {FGJ_GT.SubTypeC(ai, FGJ_GT.NonTypeVarA("Object", [])) for ai in ass}
     BigPi = Pi | l0s | ls
     constraints = C0e | Cm | {TypeMethod(BigPi, class_header, method_def, CT) for method_def in class_def.methods.values()}
     return BigPi, constraints
@@ -52,17 +52,17 @@ def TypeMethod(Pi: FGJ.Pi, class_header: FGJ_GT.ClassHeaderA, method_def: FGJ.Me
 def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tuple[FGJ_GT.TypeA, FGJ_GT.C]:
     Pi, µ = teta
     match expr:
-        case FGJ.Variable(name):
-            return µ(name), set()
+        case FGJ.Variable(_):
+            return µ[expr], set()
 
         case FGJ.FieldLookup(e0, name):
-            Re, Cr = TypeExpr(teta, e0)
+            Re, Cr = TypeExpr(teta, e0, CT)
             a = next(fresh_a)
-            oc = set()
+            oc: set[set[FGJ_GT.sc]] = set()
             for class_def in CT.values():
                 if name not in class_def.typed_fields.keys():
                     continue
-                a1s = [next(fresh_a) for _ in len(class_def.generic_type_annotation.values())]
+                a1s = [next(fresh_a) for _ in class_def.generic_type_annotation.values()]
                 xs = class_def.generic_type_annotation.keys()
                 oc |= {{FGJ_GT.SubTypeC(Re, FGJ_GT.NonTypeVarA(class_def.name, a1s)),
                         FGJ_GT.EqualC(a, AUX.sub(a1s, xs, class_def.typed_fields[name])),
@@ -107,6 +107,9 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
             ns = CT[type.name].generic_type_annotation.values()
             C = {FGJ_GT.SubTypeC(Ri, ti) for Ri, ti in zip(RiCi.keys(), typed_fields.values())} | {FGJ_GT.SubTypeC(ai, AUX.sub(ass, xs, ni)) for ai, ni in zip(ass, ns)}
             return ca, C | {ci for ci in RiCi.values()}
+
+        case _:
+            raise Exception("CANT GO HERE - BUT TYPECHECKER")
 
 
 # Constraint solving # laufzeit tot?
