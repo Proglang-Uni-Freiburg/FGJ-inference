@@ -69,23 +69,3 @@ lambdas = dict[tuple[ClassHeaderA, str], MethodSignA]
 BigPi: lambdas
 
 Teta = tuple[FGJ.Pi, µs]
-
-
-def to_Type(typeA: TypeA) -> FGJ.Type:
-    match typeA:
-        case BoundedTypeVarA(name):
-            return FGJ.TypeVar(name)
-        case NonTypeVarA(name, typeAs):
-            return FGJ.NonTypeVar(name, [to_Type(tA) for tA in typeAs])
-        case _:
-            raise Exception("CANT GO HERE - BUT TYPECHECKER")
-
-
-def to_TypeA(type: FGJ.Type) -> TypeA:
-    match type:
-        case FGJ.TypeVar(name):
-            return BoundedTypeVarA(name)
-        case FGJ.NonTypeVar(name, types):
-            return NonTypeVarA(name, [to_TypeA(t) for t in types])
-        case _:
-            raise Exception("CANT GO HERE - BUT TYPECHECKER")

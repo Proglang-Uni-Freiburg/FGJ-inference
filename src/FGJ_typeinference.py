@@ -23,10 +23,10 @@ fresh_b = fresh("b")
 
 
 def FJType(Pi: FGJ.Pi, class_def: FGJ.ClassDef, CT: FGJ.ClassTable) -> tuple[FGJ_GT.lambdas, FGJ_GT.C]:
-    class_header = FGJ_GT.ClassHeaderA(class_def.name, {FGJ_GT.BoundedTypeVarA(x.name): FGJ_GT.NonTypeVarA(n.name, [FGJ_GT.to_TypeA(t) for t in n.types]) for x, n in class_def.generic_type_annotation.items()})
-    l0s: dict[tuple[FGJ_GT.ClassHeaderA, str], FGJ_GT.MethodSignA] = dict()
+    class_header = FGJ_GT.ClassHeaderA(class_def.name, class_def.generic_type_annotation.items())
+    l0s: dict[tuple[FGJ_GT.ClassHeaderA, str], set[FGJ_GT.MethodSignA]] = dict()
     C0e: set[FGJ_GT.SubTypeC] = set()
-    ls: dict[tuple[FGJ_GT.ClassHeaderA, str], FGJ_GT.MethodSignA] = dict()
+    ls: dict[tuple[FGJ_GT.ClassHeaderA, str], set[FGJ_GT.MethodSignA]] = dict()
     Cm: set[FGJ_GT.SubTypeC] = set()
     for method_def in class_def.methods.values():
         method_sign = AUX.mtype(method_def.name, class_def.superclass, CT, Pi)
@@ -36,16 +36,18 @@ def FJType(Pi: FGJ.Pi, class_def: FGJ.ClassDef, CT: FGJ.ClassTable) -> tuple[FGJ
             C0e |= {FGJ_GT.SubTypeC(am, FGJ_GT.to_TypeA(method_sign.return_type))}
         else:
             ass = [next(fresh_a) for _ in method_def.typed_parameters]
-            ls[(class_header, method_def.name)] = FGJ_GT.MethodSignA(dict(), ass, am)
+            ls[(class_header, method_def.name)] = {FGJ_GT.MethodSignA(dict(), ass, am)}
             Cm |= {FGJ_GT.SubTypeC(am, FGJ_GT.NonTypeVarA("Object", []))} | {FGJ_GT.SubTypeC(ai, FGJ_GT.NonTypeVarA("Object", [])) for ai in ass}
     BigPi = Pi | l0s | ls
-    constraints = C0e | Cm | {TypeMethod(BigPi, class_header, method_def, CT) for method_def in class_def.methods.values()}
+    constraints = C0e | Cm
+    for method_def in class_def.methods.values():
+        constraints |= TypeMethod(BigPi, class_header, method_def, CT)
     return BigPi, constraints
 
 
 def TypeMethod(Pi: FGJ.Pi, class_header: FGJ_GT.ClassHeaderA, method_def: FGJ.MethodDef, CT: FGJ.ClassTable) -> FGJ_GT.C:
     method_sign = list(Pi[(class_header, method_def.name)])[0]  # ????
-    Re, Ce = TypeExpr((Pi, {FGJ.Variable("this"): class_header} | {x: T for x, T in zip(method_def.typed_parameters.keys(), method_sign.types_of_arguments)}), method_def.body, CT)
+    Re, Ce = TypeExpr((Pi, {FGJ.Variable("this"): FGJ_GT.NonTypeVarA(class_header.class_name, class_header.bounded_types.keys())} | {x: T for x, T in zip(method_def.typed_parameters.keys(), method_sign.types_of_arguments)}), method_def.body, CT)
     return Ce | {FGJ_GT.SubTypeC(Re, method_sign.return_type)}
 
 
