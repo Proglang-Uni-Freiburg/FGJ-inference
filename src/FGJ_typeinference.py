@@ -113,10 +113,9 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
             typed_fields = AUX.fields(ca, CT)
             xs = CT[type.name].generic_type_annotation.keys()
             ns = CT[type.name].generic_type_annotation.values()
-            sc = {FGJ_GT.SubTypeC(Ri, ti) for Ri, ti in zip(RiCi.keys(), typed_fields.values())} | {FGJ_GT.SubTypeC(ai, AUX.sub(ass, xs, ni)) for ai, ni in zip(ass, ns)}
+            sc: FGJ_GT.C = {FGJ_GT.SubTypeC(Ri, ti) for Ri, ti in zip(RiCi.keys(), typed_fields.values())} | {FGJ_GT.SubTypeC(ai, AUX.sub(ass, xs, ni)) for ai, ni in zip(ass, ns)}
             for c in RiCi.values():
-                for scso in c:
-                    s
+                sc |= c
             return ca, sc
 
         case _:
