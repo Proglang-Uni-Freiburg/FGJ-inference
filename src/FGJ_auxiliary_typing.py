@@ -89,10 +89,8 @@ def mtype(method_name: str, c: FGJ.NonTypeVar, CT: FGJ.ClassTable, PI: FGJ.Pi) -
             gen_type_ano = class_def.generic_type_annotation
             method_signature = list(PI[(FGJ.ClassHeader(class_def.name, gen_type_ano), method_name)])[0] # Why Set? Get a random ano? ???
             xs = list(gen_type_ano.keys())
-            subted_gen_type_ano = {sub(ts, xs, yi): sub(ts, xs, pi) for yi, pi in method_signature.gen_typ_ano.items()}
-            if type(subted_gen_type_ano) is not dict[FGJ.TypeVar, FGJ.NonTypeVar]:
-                raise Exception("CAN I COME HERE? - BUT TYPECHECKING")
-            # typechecker still isnt satisfied
+            # subted_gen_type_ano: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {sub(ts, xs, yi): sub(ts, xs, pi) for yi, pi in method_signature.gen_typ_ano.items()}
+            subted_gen_type_ano: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {yi: sub(ts, xs, pi) for yi, pi in method_signature.gen_typ_ano.items()}
             subted_arguments = [sub(ts, xs, ui) for ui in method_signature.types_of_arguments]
             subted_return_type = sub(ts, xs, method_signature.return_type)
             return FGJ.MethodSign(subted_gen_type_ano, subted_arguments, subted_return_type)
@@ -112,7 +110,8 @@ def is_valid_method_override(method_name: str, n: FGJ.NonTypeVar, method_sign_lo
         return True
     ps = list(method_sign_lower.gen_typ_ano.values())
     qs = list(method_sign_upper.gen_typ_ano.values())
-    ys = list(method_sign_lower.gen_typ_ano.keys())
+    ysTV = list(method_sign_lower.gen_typ_ano.keys())
+    ys: list[FGJ.Type] = list(method_sign_lower.gen_typ_ano.keys())
     zs = list(method_sign_upper.gen_typ_ano.keys())
     ts = method_sign_lower.types_of_arguments
     us = method_sign_upper.types_of_arguments
@@ -120,7 +119,7 @@ def is_valid_method_override(method_name: str, n: FGJ.NonTypeVar, method_sign_lo
     u0 = method_sign_upper.return_type
     ps_equals_qs = all([pi == sub(ys, zs, qi) for pi, qi in zip(ps, qs)])
     ts_equals_us = all([pi == sub(ys, zs, qi) for pi, qi in zip(ts, us)])
-    Delta = {yi: pi for yi, pi in zip(ys, ps)}
+    Delta = {yi: pi for yi, pi in zip(ysTV, ps)}
     t0_sub_u0 = is_subtype(t0, sub(ys, zs, u0), Delta, CT)
     return ps_equals_qs and ts_equals_us and t0_sub_u0
 
