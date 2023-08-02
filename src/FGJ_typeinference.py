@@ -171,9 +171,15 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable):
                     # match
                     # adopt
                     # adapt
-                    case FGJ_GT.SubTypeC(FGJ.NonTypeVar(n1, _), FGJ.NonTypeVar(n2, _)) if AUX.is_subtype(FGJ.NonTypeVar(n1, list(CT[n1].generic_type_annotation.keys())), FGJ.NonTypeVar(n2, list(CT[n2].generic_type_annotation.keys())), env, CT):
+                    case FGJ_GT.SubTypeC(FGJ.NonTypeVar(n1, ts), FGJ.NonTypeVar(n2, us)) if isSubtypeByName(n1, n2, CT):
+                        xs: list[FGJ.Type] = [FGJ.TypeVar("x" + str(i)) for i, _ in enumerate(ts)]
+                        ns = genericSupertype(n1, xs, n2, CT)
                         C.remove(constraint)
-                        # C |= {FGJ_GT.EqualC(sub(t, x, ), t2)}
+                        subtedns = [AUX.sub(ts, xs, ni) for ni in ns]
+                        C |= {FGJ_GT.EqualC(FGJ.NonTypeVar(n2, subtedns), FGJ.NonTypeVar(n2, us))}
+                    # wo wann brauch ich env?
+                    # FGJ_GT.SubTypeC(FGJ.TypeVar(n1), FGJ.NonTypeVar(n2, ts))
+
                     # reduce
                     case FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, ts), FGJ.NonTypeVar(d, us)) if c == d:
                         C.remove(constraint)
@@ -189,3 +195,27 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable):
                         C.remove(constraint)
                         C.add(FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(n, ts)))
                         changes = True
+
+
+# genericSupertype
+
+def genericSupertype(C: str, ts: list[FGJ.Type], D: str, CT: FGJ.ClassTable) -> list[FGJ.Type]:
+    if C == D:
+        return ts
+    else:
+        class_def = CT[C]
+        ys = list(class_def.generic_type_annotation.keys())
+        superclass = class_def.superclass
+        Cprime = superclass.name
+        ms = superclass.types
+        return genericSupertype(Cprime, [AUX.sub(ts, ys, m) for m in ms], D, CT)
+
+
+def isSubtypeByName(C: str, D: str, CT: FGJ.ClassTable) -> bool:
+    if D == "Object":
+        return True
+    if C == "Object":
+        return False
+    if C == D:
+        return True
+    return isSubtypeByName(CT[C].superclass.name, D, CT)
