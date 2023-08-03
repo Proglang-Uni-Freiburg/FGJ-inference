@@ -122,19 +122,20 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
             raise Exception("CANT GO HERE - BUT TYPECHECKER")
 
 
+# helper functions
+
 def is_solved_form(C: FGJ_GT.C) -> bool:
-    as_12: list[str] = list()
-    as_34: list[str] = list()
+    lst: list[str] = list()
     for constraint in C:
         match constraint:
-            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA()) if a not in as_34:
-                as_12.append(a)
-            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar()) if a not in as_12:
-                as_34.append(a)
-            case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA()) if a not in as_34:
-                as_12.append(a)
-            case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(_, ts)) if constraint.t1 not in ts and a not in as_12:
-                as_34.append(a)
+            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(_), FGJ_GT.TypeVarA(_)):
+                pass
+            case FGJ_GT.EqualC(FGJ_GT.TypeVarA(_), FGJ_GT.TypeVarA(_)):
+                pass
+            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(_)) if a not in lst:
+                lst.append(a)
+            case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(_)) if a not in lst and not occoursIn(FGJ_GT.TypeVarA(a), constraint.t2):
+                lst.append(a)
             case _:
                 return False
     return True
@@ -174,19 +175,20 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable):
                         ns = genericSupertype(n1, xs, n2, CT)
                         C.remove(constraint)
                         subtedns = [AUX.sub(ts, xs, ni) for ni in ns]
-                        C |= {FGJ_GT.EqualC(FGJ.NonTypeVar(n2, subtedns), FGJ.NonTypeVar(n2, us))}
+                        C.add(FGJ_GT.EqualC(FGJ.NonTypeVar(n2, subtedns), FGJ.NonTypeVar(n2, us)))
                         changes = True
 
                     case FGJ_GT.SubTypeC(FGJ.TypeVar(n1), FGJ.NonTypeVar(n2, us)) if isSubtypeByName(env[FGJ.TypeVar(n1)].name, n2, CT):
                         ns = genericSupertype(env[FGJ.TypeVar(n1)].name, env[FGJ.TypeVar(n1)].types, n2, CT)
                         C.remove(constraint)
-                        C |= {FGJ_GT.EqualC(FGJ.NonTypeVar(n2, ns), FGJ.NonTypeVar(n2, us))}
+                        C.add(FGJ_GT.EqualC(FGJ.NonTypeVar(n2, ns), FGJ.NonTypeVar(n2, us)))
                         changes = True
 
                     # reduce
                     case FGJ_GT.EqualC(FGJ.NonTypeVar(c, ts), FGJ.NonTypeVar(d, us)) if c == d:
                         C.remove(constraint)
-                        C |= {FGJ_GT.EqualC(ti, ui) for ti, ui in zip(ts, us)}
+                        for ti, ui in zip(ts, us):
+                            C.add(FGJ_GT.EqualC(ti, ui))
                         changes = True
 
                     # equals
@@ -236,6 +238,8 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable):
                             changes = True
 
         # step 2
+
+        # what do we do here? return is false
         if is_solved_form(C_prime):
             return C_prime
 
@@ -255,6 +259,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable):
 
                 # 3
                 case FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, ts), FGJ_GT.TypeVarA(b)):
+                    # adding or constraints to c_prime
                     ...
 
             # 2 Arguments
@@ -273,6 +278,113 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable):
                     case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(c, ts)), FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(d, vs)) if not isSubtypeByName(c, d, CT) and not isSubtypeByName(d, c, CT):
                         noSolution = True
                         break
+
+        # step 3
+        for C_prime2 in gen_C_prime(C_prime):
+            changes = False
+            noSolution = False
+
+            if noSolution:
+                break
+
+            for constraint in C_prime2:
+                match constraint:
+                    case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), t):
+                        if occoursIn(FGJ_GT.TypeVarA(a), t):
+                            noSolution = True
+                            break
+                        subConstraint(t, FGJ_GT.TypeVarA(a), C_prime2)
+                        # C.add() (a = T) but T/a?
+                        changes = True
+
+            if changes:
+                # continue with step 1
+                ...
+
+            # step 5
+            for constraint in C_prime2:
+                match constraint:
+                    # is this exhaustively
+                    case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)):
+                        C.remove(constraint)
+                        subConstraint(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b), C_prime2)
+                        C_prime2.add(FGJ_GT.EqualC(FGJ_GT.TypeVarA(b), FGJ_GT.TypeVarA(a)))
+
+            for constraint in C_prime2:
+                match constraint:
+                    case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)) if a == b:
+                        C_prime2.remove(constraint)
+
+            # step 6
+            C_equal: set[FGJ_GT.EqualC] = set()
+            C_sub: set[FGJ_GT.SubTypeC] = set()
+
+            for constraint in C_prime2:
+                match constraint:
+                    case FGJ_GT.EqualC(_):
+                        C_equal.add(constraint)
+                    case FGJ_GT.SubTypeC(_):
+                        C_sub.add(constraint)
+
+            ass: list[FGJ_GT.TypeVarA] = [c.t1 for c in C_equal]
+            Ys_fresh = [FGJ.TypeVar("Y" + str(i)) for i, _ in enumerate(ass)]
+            # why only X in C_sub? why not all T?
+            o = {c.t1: sub(Ys_fresh, ass, c.t2) for c in C_equal} | {ai: yi for ai, yi in zip(ass, Ys_fresh)} | {c.t1: c.t2 for c in C_sub}
+            # what is yi? all c from C_sub?
+            y = ... # {yi: sub(Ys_fresh, ass, c.t2) for c in C_sub}
+            return o, y
+
+
+
+def subOne(y: FGJ.TypeVar, a: FGJ_GT.TypeVarA, t: FGJ.Type) -> FGJ.Type:
+    match t:
+        case FGJ_GT.TypeVarA(a.name):
+            return y
+        case FGJ.TypeVar(_):
+            return t
+        case FGJ.NonTypeVar(n, ts):
+            return FGJ.NonTypeVar(n, [subSingle(y, a, ti) for ti in ts])
+        case _:
+            raise Exception("CANT GO HERE - BUT TYPECHECKER")
+
+
+def sub(ys: list[FGJ.TypeVar], ass: list[FGJ_GT.TypeVarA], t: FGJ.Type) -> FGJ.Type:
+    for yi, ai in zip(ys, ass):
+        t = subOne(yi, ai, t)
+    return t
+
+
+def subConstraint(t: FGJ.Type, a: FGJ_GT.TypeVarA, C: FGJ_GT.C):
+    for constraint in C:
+        match constraint:
+            case FGJ_GT.EqualC(t1, t2):
+                C.remove(constraint)
+                C.add(FGJ_GT.EqualC(subSingle(t1, a), subSingle(t2, a)))
+            case FGJ_GT.SubTypeC(t1, t2):
+                C.remove(constraint)
+                C.add(FGJ_GT.SubTypeC(subSingle(t1, a), subSingle(t2, a)))
+
+
+def subSingle(t: FGJ.Type, a: FGJ_GT.TypeVarA) -> FGJ.Type:
+    match t:
+        case FGJ_GT.TypeVarA(a.name):
+            return t
+        case FGJ.TypeVar(_):
+            return t
+        case FGJ.NonTypeVar(n, ts):
+            return FGJ.NonTypeVar(n, [subSingle(ti, a) for ti in ts])
+    raise Exception("CANT GO HERE - BUT TYPECHECKER")
+
+
+def occoursIn(a: FGJ_GT.TypeVarA, b: FGJ.Type) -> bool:
+    match b:
+        case FGJ.TypeVar(_):
+            return False
+        case FGJ.NonTypeVar(_, ts):
+            return any([occoursIn(a, ti) for ti in ts])
+        case FGJ_GT.TypeVarA(a.name):
+            return True
+    raise Exception("CANT GO HERE -> BUT TYPECHECKER")
 
 
 # genericSupertype
