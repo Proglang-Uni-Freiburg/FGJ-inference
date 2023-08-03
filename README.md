@@ -31,3 +31,5 @@ X=X -> rauswerfen zu reduce-regel dazu - fehlt im Paper
 C<T*> = D<U*> -> unsolvable - fehlt im Paper
 
 statt sets listen? sollte keinen unterschied machen (dublikate verhindern -> auch löschen oder ...)
+
+füge bei equals auch an=a1 hinzu, sollte keinen unterschied machen

@@ -192,6 +192,12 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable):
                         changes = True
 
                     # equals
+                    case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)):
+                        equals: list[FGJ_GT.SubTypeC] = findCircle(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b), C)
+                        for sc in equals:
+                            C.remove(sc)
+                            C.add(FGJ_GT.EqualC(sc.t1, sc.t2))
+                            changes = True
 
                     # erase
                     case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)) if a == b:
@@ -209,13 +215,30 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable):
                         changes = True
 
                     # 2 Arguments
+                for constraint2 in C_prime:
+                    if constraint == constraint2:
+                        continue
 
-                    # match
-                    # adopt
+                    match constraint, constraint2:
+
+                        # match
+                        case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(c, _)), FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(d, _)) if a == b:
+                            if isSubtypeByName(c, d, CT):
+                                C.remove(constraint2)
+                                C.add(FGJ_GT.SubTypeC(constraint.t2, constraint2.t2))
+                                changes = True
+                            elif isSubtypeByName(d, c, CT):
+                                C.remove(constraint)
+                                C.add(FGJ_GT.SubTypeC(constraint2.t2, constraint.t2))
+                                changes = True
+
+                        # adopt
+                        case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(c, cs)), FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(d, _)) if isConnected(FGJ_GT.TypeVarA(b), FGJ_GT.TypeVarA(a), C):
+                            C.add(FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(c, cs)))
+                            changes = True
 
 
 # genericSupertype
-
 def genericSupertype(C: str, ts: list[FGJ.Type], D: str, CT: FGJ.ClassTable) -> list[FGJ.Type]:
     if C == D:
         return ts
@@ -236,3 +259,28 @@ def isSubtypeByName(C: str, D: str, CT: FGJ.ClassTable) -> bool:
     if C == D:
         return True
     return isSubtypeByName(CT[C].superclass.name, D, CT)
+
+
+# findCircle
+def findCircle(start: FGJ_GT.TypeVarA, a: FGJ_GT.TypeVarA, b: FGJ_GT.TypeVarA, C: FGJ_GT.C) -> list[FGJ_GT.SubTypeC]:
+    if start == b:
+        return [FGJ_GT.SubTypeC(a, b)]
+    for constraint in C:
+        match constraint:
+            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(bprime), FGJ_GT.TypeVarA(c)) if b == constraint.t1:
+                circle = findCircle(start, FGJ_GT.TypeVarA(bprime), FGJ_GT.TypeVarA(c), C)
+                if circle:
+                    return [FGJ_GT.SubTypeC(a, b)] + circle
+    return []
+
+
+# connected
+def isConnected(a: FGJ_GT.TypeVarA, b: FGJ_GT.TypeVarA, C: FGJ_GT.C) -> bool:
+    if a == b:
+        return True
+    for constraint in C:
+        match constraint:
+            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(aPrime), FGJ_GT.TypeVarA(c)) if a == FGJ_GT.TypeVarA(aPrime):
+                if isConnected(FGJ_GT.TypeVarA(c), b, C):
+                    return True
+    return False
