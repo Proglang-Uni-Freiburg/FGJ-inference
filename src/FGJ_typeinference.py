@@ -168,8 +168,8 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable):
             changes = False
             for constraint in C_prime:
                 match constraint:
-                    # match
-                    # adopt
+                    # 1 Argument
+
                     # adapt
                     case FGJ_GT.SubTypeC(FGJ.NonTypeVar(n1, ts), FGJ.NonTypeVar(n2, us)) if isSubtypeByName(n1, n2, CT):
                         xs: list[FGJ.Type] = [FGJ.TypeVar("x" + str(i)) for i, _ in enumerate(ts)]
@@ -177,24 +177,41 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable):
                         C.remove(constraint)
                         subtedns = [AUX.sub(ts, xs, ni) for ni in ns]
                         C |= {FGJ_GT.EqualC(FGJ.NonTypeVar(n2, subtedns), FGJ.NonTypeVar(n2, us))}
-                    # wo wann brauch ich env?
-                    # FGJ_GT.SubTypeC(FGJ.TypeVar(n1), FGJ.NonTypeVar(n2, ts))
+                        changes = True
+
+                    case FGJ_GT.SubTypeC(FGJ.TypeVar(n1), FGJ.NonTypeVar(n2, us)) if isSubtypeByName(env[FGJ.TypeVar(n1)].name, n2, CT):
+                        ns = genericSupertype(env[FGJ.TypeVar(n1)].name, env[FGJ.TypeVar(n1)].types, n2, CT)
+                        C.remove(constraint)
+                        C |= {FGJ_GT.EqualC(FGJ.NonTypeVar(n2, ns), FGJ.NonTypeVar(n2, us))}
+                        changes = True
 
                     # reduce
                     case FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, ts), FGJ.NonTypeVar(d, us)) if c == d:
                         C.remove(constraint)
                         C |= {FGJ_GT.EqualC(ti, ui) for ti, ui in zip(ts, us)}
                         changes = True
+
                     # equals
+
                     # erase
                     case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)) if a == b:
                         C.remove(constraint)
                         changes = True
+
+                    case FGJ_GT.EqualC(FGJ.TypeVar(x), FGJ.TypeVar(y)) if x == y:
+                        C.remove(constraint)
+                        changes = True
+
                     # swap
                     case FGJ_GT.EqualC(FGJ.NonTypeVar(n, ts), FGJ_GT.TypeVarA(a)):
                         C.remove(constraint)
                         C.add(FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(n, ts)))
                         changes = True
+
+                    # 2 Arguments
+
+                    # match
+                    # adopt
 
 
 # genericSupertype
