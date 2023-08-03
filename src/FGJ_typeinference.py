@@ -122,8 +122,6 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
             raise Exception("CANT GO HERE - BUT TYPECHECKER")
 
 
-# Constraint solving # laufzeit tot?
-
 def is_solved_form(C: FGJ_GT.C) -> bool:
     as_12: list[str] = list()
     as_34: list[str] = list()
@@ -172,7 +170,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable):
 
                     # adapt
                     case FGJ_GT.SubTypeC(FGJ.NonTypeVar(n1, ts), FGJ.NonTypeVar(n2, us)) if isSubtypeByName(n1, n2, CT):
-                        xs: list[FGJ.Type] = [FGJ.TypeVar("x" + str(i)) for i, _ in enumerate(ts)]
+                        xs = [FGJ.TypeVar("x" + str(i)) for i, _ in enumerate(ts)]
                         ns = genericSupertype(n1, xs, n2, CT)
                         C.remove(constraint)
                         subtedns = [AUX.sub(ts, xs, ni) for ni in ns]
@@ -186,7 +184,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable):
                         changes = True
 
                     # reduce
-                    case FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, ts), FGJ.NonTypeVar(d, us)) if c == d:
+                    case FGJ_GT.EqualC(FGJ.NonTypeVar(c, ts), FGJ.NonTypeVar(d, us)) if c == d:
                         C.remove(constraint)
                         C |= {FGJ_GT.EqualC(ti, ui) for ti, ui in zip(ts, us)}
                         changes = True
@@ -236,6 +234,45 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable):
                         case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(c, cs)), FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(d, _)) if isConnected(FGJ_GT.TypeVarA(b), FGJ_GT.TypeVarA(a), C):
                             C.add(FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(c, cs)))
                             changes = True
+
+        # step 2
+        if is_solved_form(C_prime):
+            return C_prime
+
+        noSolution = False
+        for constraint in C_prime:
+            match constraint:
+                # 1 Argument
+                # Own C<Ts> = D<Us> -> No solution
+                case FGJ_GT.EqualC(FGJ.NonTypeVar(_), FGJ.NonTypeVar(_)):
+                    noSolution = True
+                    break
+
+                # 1
+                case FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, _), FGJ.NonTypeVar(d, _)) if not isSubtypeByName(c, d, CT):
+                    noSolution = True
+                    break
+
+                # 3
+                case FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, ts), FGJ_GT.TypeVarA(b)):
+                    ...
+
+            # 2 Arguments
+            # 2
+            if noSolution:
+                break
+
+            for constraint2 in C_prime:
+                if noSolution:
+                    break
+
+                if constraint == constraint2:
+                    continue
+
+                match constraint, constraint2:
+                    case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(c, ts)), FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(d, vs)) if not isSubtypeByName(c, d, CT) and not isSubtypeByName(d, c, CT):
+                        noSolution = True
+                        break
 
 
 # genericSupertype
