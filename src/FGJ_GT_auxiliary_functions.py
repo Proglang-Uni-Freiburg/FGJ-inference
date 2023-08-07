@@ -60,7 +60,7 @@ def subOne(y: FGJ.TypeVar, a: FGJ_GT.TypeVarA, t: FGJ.Type) -> FGJ.Type:
         case FGJ.TypeVar(_):
             return t
         case FGJ.NonTypeVar(n, ts):
-            return FGJ.NonTypeVar(n, [subSingle(y, a, ti) for ti in ts])
+            return FGJ.NonTypeVar(n, [subOne(y, a, ti) for ti in ts])
         case _:
             raise Exception("CANT GO HERE - BUT TYPECHECKER")
 

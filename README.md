@@ -43,3 +43,12 @@ step 3 remove add (T = a) why dont remove it
 --
 
 subConstraint does not use it's first parameter
+
+---
+
+duale rule for match and adopt - keep bigger one
+
+match dont need delta
+
+expandLB - check if subtype possible
+ - add constraint C<T><D<U> and mark

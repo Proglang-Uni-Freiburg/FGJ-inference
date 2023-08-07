@@ -50,7 +50,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
                         C.remove(constraint)
                         changed = True
 
-                    case FGJ_GT.EqualC(FGJ.TypeVar(x), FGJ.TypeVar(y)) if x == y:
+                    case FGJ_GT.EqualC(FGJ.TypeVar(x), FGJ.TypeVar(z)) if x == z:
                         C.remove(constraint)
                         changed = True
 
