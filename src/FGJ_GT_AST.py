@@ -1,25 +1,7 @@
-from dataclasses import dataclass
 import FGJ_AST as FGJ
 
-
-# class TypeA:
-#     pass
-
-
-# @dataclass(frozen=True)
-# class TypeVarA(TypeA):
-#     name: str
-
-
-# @dataclass(frozen=True)
-# class BoundedTypeVarA(TypeA):
-#     name: str
-
-
-# @dataclass(frozen=True)
-# class NonTypeVarA(TypeA):
-#     name: str
-#     types: list[TypeA]
+from dataclasses import dataclass
+from hset import hSet
 
 
 @dataclass(frozen=True)
@@ -47,11 +29,13 @@ class EqualC:
 
 sc = SubTypeC | EqualC
 
-oc = set[set[sc]]
+# oc = set[set[sc]]
+oc = hSet[hSet[sc]]
 
 c = oc | sc
 
-C = set[c]
+# C = set[c]
+C = hSet[c]
 
 
 lambdas = dict[tuple[FGJ.ClassHeader, str], set[FGJ.MethodSign]]

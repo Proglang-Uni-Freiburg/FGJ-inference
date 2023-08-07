@@ -33,3 +33,13 @@ C<T*> = D<U*> -> unsolvable - fehlt im Paper
 statt sets listen? sollte keinen unterschied machen (dublikate verhindern -> auch löschen oder ...)
 
 füge bei equals auch an=a1 hinzu, sollte keinen unterschied machen
+
+NEW QUESTIONS
+
+step 2 rule 3 ?
+
+step 3 remove add (T = a) why dont remove it
+
+--
+
+subConstraint does not use it's first parameter

@@ -3,6 +3,7 @@ import FGJ_GT_AST as FGJ_GT
 import FGJ_auxiliary_typing as AUX
 
 from typing import Generator, Any
+from hset import hSet
 
 
 def fresh(name: str) -> Generator[FGJ_GT.TypeVarA, Any, None]:
@@ -12,7 +13,7 @@ def fresh(name: str) -> Generator[FGJ_GT.TypeVarA, Any, None]:
         count += 1
 
 
-def is_solved_form(C: set[FGJ_GT.sc]) -> bool:
+def is_solved_form(C: hSet[FGJ_GT.sc]) -> bool:
     lst: list[str] = list()
     for constraint in C:
         match constraint:
@@ -29,21 +30,21 @@ def is_solved_form(C: set[FGJ_GT.sc]) -> bool:
     return True
 
 
-def gen_C_prime(C: FGJ_GT.C) -> Generator[set[FGJ_GT.sc], Any, Any]:
-    sc_set: set[FGJ_GT.sc] = set()
+def gen_C_prime(C: FGJ_GT.C) -> Generator[hSet[FGJ_GT.sc], Any, Any]:
+    sc_set: hSet[FGJ_GT.sc] = hSet([])
     oc_list: list[FGJ_GT.oc] = list()
     for c in C:
         match c:
             case FGJ_GT.SubTypeC():
-                sc_set |= {c}
+                sc_set.add(c)
             case FGJ_GT.EqualC():
-                sc_set |= {c}
+                sc_set.add(c)
             case _:
                 oc_list += [c]
     for oc in oc_list:
-        out_set: set[FGJ_GT.sc] = set()
-        for sci in oc:
-            out_set |= sci
+        out_set: hSet[FGJ_GT.sc] = hSet([])
+        for ssci in oc:
+            out_set |= ssci
         yield out_set | sc_set
 
 

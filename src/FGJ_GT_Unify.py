@@ -192,9 +192,14 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
                         C_sub.add(constraint)
 
             ass: list[FGJ_GT.TypeVarA] = [c.t1 for c in C_equal]
-            Ys_fresh = [FGJ.TypeVar("Y" + str(i)) for i, _ in enumerate(ass)]
+            # 'Y' is not allowed to occur already, do a check here or search for another
+            start = "Y"
+            Y_fresh = FGJ.TypeVar(start)
+            Ys_fresh = [FGJ.TypeVar(start + str(i)) for i, _ in enumerate(ass)]
             # why only X in C_sub? why not all T?
             o = {c.t1: AUX_GT.sub(Ys_fresh, ass, c.t2) for c in C_equal} | {ai: yi for ai, yi in zip(ass, Ys_fresh)} | {c.t1: c.t2 for c in C_sub}
-            # what is yi? all c from C_sub?
-            y = ... # {yi: sub(Ys_fresh, ass, c.t2) for c in C_sub}
+            # all c from C_sub?
+            y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {Y_fresh: AUX_GT.sub(Ys_fresh, ass, c.t2) for c in C_sub}
             return o, y
+
+    raise Exception("NO SOLUTION FOUND")
