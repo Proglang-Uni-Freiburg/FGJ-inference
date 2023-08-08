@@ -44,6 +44,6 @@ lambdas, c = FJType(dict(), program.CT["Pair"], program.CT)
 print("LAMBDAS:\n", lambdas_to_string(lambdas))
 print("C:\n", constraint_set_to_string(c))
 
-print(Unify(c, dict(), program.CT))
+# print(Unify(c, dict(), program.CT))
 
 # print(TypeInference(dict(), class_def, CT))

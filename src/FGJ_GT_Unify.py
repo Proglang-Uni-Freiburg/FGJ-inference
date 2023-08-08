@@ -80,10 +80,24 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
                                 C_prime.add(FGJ_GT.SubTypeC(constraint2.t2, constraint.t2))
                                 changed = True
 
+                        # match reverse (own)
+                        case FGJ_GT.SubTypeC(FGJ_GT.FGJ.NonTypeVar(c, _), FGJ_GT.TypeVarA(a)), FGJ_GT.SubTypeC(FGJ.NonTypeVar(d, _), FGJ_GT.TypeVarA(b)) if a == b:
+                            if AUX_GT.isSubtypeByName(c, d, CT):
+                                C_prime.remove(constraint)
+                                C_prime.add(FGJ_GT.SubTypeC(constraint.t1, constraint2.t1))
+                                changed = True
+                            elif AUX_GT.isSubtypeByName(d, c, CT):
+                                C_prime.remove(constraint2)
+                                C_prime.add(FGJ_GT.SubTypeC(constraint2.t1, constraint.t1))
+
                         # adopt
                         case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(c, cs)), FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(d, _)) if AUX_GT.isConnected(FGJ_GT.TypeVarA(b), FGJ_GT.TypeVarA(a), C):
                             C_prime.add(FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(c, cs)))
                             changed = True
+
+                        # adopt reverse (own)
+                        case FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, cs), FGJ_GT.TypeVarA(a)), FGJ_GT.SubTypeC(FGJ.NonTypeVar(d, ds), FGJ_GT.TypeVarA(b)) if AUX_GT.isConnected(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b), C):
+                            C_prime.add(FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, cs), FGJ_GT.TypeVarA(b)))
 
         # step 2
         noSolution = False

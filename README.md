@@ -48,6 +48,16 @@ subConstraint does not use it's first parameter
 
 duale rule for match and adopt - keep bigger one
 
+match:
+C<T> < a, D<V> < a          |- C<X> <: D<N>
+------------------
+C<T> < D<V>, D<V> < a
+
+adopt:
+C<T> < a, a <* b, D<U> < b
+--------------------------
+-//- + C<T> < b
+
 match dont need delta
 
 expandLB - check if subtype possible
