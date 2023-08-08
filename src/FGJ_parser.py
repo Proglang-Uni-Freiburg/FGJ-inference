@@ -1,6 +1,8 @@
 from lark import Lark
 from lark import Transformer
 
+from frozenlist import FrozenList
+
 import FGJ_AST as FGJ
 
 
@@ -25,7 +27,7 @@ featherweight_gerneric_java_parser = Lark(r"""
 
     variable : identifier
 
-    field_lookup : identifier "." expression
+    field_lookup : expression "." identifier
 
     method_lookup : expression ("<" type_list ">")? "." identifier "(" list_of_exprs ")"
 
@@ -91,9 +93,10 @@ class TreeToFGJ(Transformer):
         match len(tntv):
             case 2:
                 name, types = tntv
+                types = FrozenList(types)
             case _:
                 (name,) = tntv
-                types = list()
+                types = FrozenList()
         return FGJ.NonTypeVar(name, types)
 
     def cast(self, tc):
@@ -121,9 +124,10 @@ class TreeToFGJ(Transformer):
         match len(tc):
             case 3:
                 name, list_of_types, parameters = tc
+                list_of_types = FrozenList(list_of_types)
             case 2:
                 name, parameters = tc
-                list_of_types = list()
+                list_of_types = FrozenList()
         return FGJ.NewClass(FGJ.NonTypeVar(name, list_of_types), parameters)
 
     def expression(self, te):

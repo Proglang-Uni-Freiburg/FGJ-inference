@@ -3,6 +3,7 @@ import FGJ_GT_AST as FGJ_GT
 import FGJ_auxiliary_typing as AUX
 
 from typing import Generator, Any
+from frozenlist import FrozenList
 
 
 def fresh(name: str) -> Generator[FGJ_GT.TypeVarA, Any, None]:
@@ -59,7 +60,7 @@ def subOne(y: FGJ.TypeVar, a: FGJ_GT.TypeVarA, t: FGJ.Type) -> FGJ.Type:
         case FGJ.TypeVar(_):
             return t
         case FGJ.NonTypeVar(n, ts):
-            return FGJ.NonTypeVar(n, [subOne(y, a, ti) for ti in ts])
+            return FGJ.NonTypeVar(n, FrozenList([subOne(y, a, ti) for ti in ts]))
         case _:
             raise Exception("CANT GO HERE - BUT TYPECHECKER")
 
@@ -88,7 +89,7 @@ def subSingle(t: FGJ.Type, a: FGJ_GT.TypeVarA) -> FGJ.Type:
         case FGJ.TypeVar(_):
             return t
         case FGJ.NonTypeVar(n, ts):
-            return FGJ.NonTypeVar(n, [subSingle(ti, a) for ti in ts])
+            return FGJ.NonTypeVar(n, FrozenList([subSingle(ti, a) for ti in ts]))
     raise Exception("CANT GO HERE - BUT TYPECHECKER")
 
 
@@ -104,7 +105,7 @@ def occoursIn(a: FGJ_GT.TypeVarA, b: FGJ.Type) -> bool:
 
 
 # genericSupertype
-def genericSupertype(C: str, ts: list[FGJ.Type], D: str, CT: FGJ.ClassTable) -> list[FGJ.Type]:
+def genericSupertype(C: str, ts: FrozenList[FGJ.Type], D: str, CT: FGJ.ClassTable) -> FrozenList[FGJ.Type]:
     if C == D:
         return ts
     else:
@@ -113,7 +114,7 @@ def genericSupertype(C: str, ts: list[FGJ.Type], D: str, CT: FGJ.ClassTable) -> 
         superclass = class_def.superclass
         Cprime = superclass.name
         ms = superclass.types
-        return genericSupertype(Cprime, [AUX.sub(ts, ys, m) for m in ms], D, CT)
+        return genericSupertype(Cprime, FrozenList([AUX.sub(ts, ys, m) for m in ms]), D, CT)
 
 
 def isSubtypeByName(C: str, D: str, CT: FGJ.ClassTable) -> bool:

@@ -5,7 +5,8 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class TypeVarA(FGJ.TypeVar):
-    pass
+    def __str__(self) -> str:
+        return self.name
 
 
 @dataclass(frozen=True)
@@ -16,6 +17,9 @@ class SubTypeC:
     t1: FGJ.Type
     t2: FGJ.Type
 
+    def __str__(self) -> str:
+        return f"{self.t1} <= {self.t2}"
+
 
 @dataclass(frozen=True)
 class EqualC:
@@ -24,6 +28,9 @@ class EqualC:
     """
     t1: FGJ.Type
     t2: FGJ.Type
+
+    def __str__(self) -> str:
+        return f"{self.t1} == {self.t2}"
 
 
 sc = SubTypeC | EqualC
@@ -37,7 +44,7 @@ c = oc | sc
 C = frozenset[c]
 
 
-lambdas = dict[tuple[FGJ.ClassHeader, str], frozenset[FGJ.MethodSign]]
+lambdas = dict[tuple[FGJ.ClassHeader, str], list[FGJ.MethodSign]]
 
 µs = dict[FGJ.Variable, FGJ.Type]
 

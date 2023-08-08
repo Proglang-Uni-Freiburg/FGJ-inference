@@ -1,9 +1,13 @@
-class Pair<X extends Object<>, Y extends Object<>> extends Object<> {
+class Pair <X extends Object <>, Y extends Object<>> extends Object<> {
     X fst;
     Y snd;
 
+    setfst(fst) {
+        return new Pair(fst, this.snd);
+    }
+
     swap() {
-        return new Pair<Y, X>(this.snd, this.fst);
+        return new Pair(this.snd, this.fst);
     }
 }
 

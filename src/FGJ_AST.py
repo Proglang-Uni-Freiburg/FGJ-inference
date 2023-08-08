@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from frozendict import frozendict
+from frozenlist import FrozenList
 
 
 @dataclass(frozen=True)
@@ -9,7 +11,10 @@ class Type:
 @dataclass(frozen=True)
 class NonTypeVar(Type):
     name: str
-    types: list['Type']
+    types: FrozenList['Type']
+
+    def __post_init__(self):
+        self.types.freeze()
 
     # __eq__ -> name == name => types == types?
 
@@ -135,7 +140,10 @@ class ClassDef:
 @dataclass(frozen=True)
 class ClassHeader:
     class_name: str
-    bounded_types: dict[TypeVar, NonTypeVar]
+    bounded_types: frozendict[TypeVar, NonTypeVar]
+
+    def __str__(self) -> str:
+        return f"{self.class_name}<{', '.join(f'{v}: {n}' for v, n in self.bounded_types.items())}>"
 
 
 @dataclass(frozen=True)
@@ -144,8 +152,11 @@ class MethodSign:
     types_of_arguments: list[Type]
     return_type: Type
 
+    def __str__(self) -> str:
+        return f"<{', '.join(f'{k} extends {v}' for k, v in self.gen_typ_ano.items())}>[{', '.join(str(arg) for arg in self.types_of_arguments)}] -> {self.return_type}"
 
-Pi = dict[tuple[ClassHeader, str], frozenset[MethodSign]]
+
+Pi = dict[tuple[ClassHeader, str], list[MethodSign]]
 
 Delta = dict[TypeVar, NonTypeVar]
 Env = dict[Variable, Type]

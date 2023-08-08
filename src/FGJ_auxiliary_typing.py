@@ -1,6 +1,9 @@
 from typing import Optional
 import FGJ_AST as FGJ
 
+from frozendict import frozendict
+from frozenlist import FrozenList
+
 
 def sub_single(T: FGJ.Type, X: FGJ.TypeVar, T_old: FGJ.Type) -> FGJ.Type:
     """
@@ -12,12 +15,12 @@ def sub_single(T: FGJ.Type, X: FGJ.TypeVar, T_old: FGJ.Type) -> FGJ.Type:
         case FGJ.TypeVar(_):
             return T_old
         case FGJ.NonTypeVar(name, types):
-            return FGJ.NonTypeVar(name, [sub_single(T, X, t) for t in types])
+            return FGJ.NonTypeVar(name, FrozenList([sub_single(T, X, t) for t in types]))
         case _:
             raise Exception(f"Arguments must be either TypeVar or NonTypeVar but is {type(T_old)}")
 
 
-def sub(Ts: list[FGJ.Type], Xs: list[FGJ.TypeVar], T_old: FGJ.Type) -> FGJ.Type:
+def sub(Ts: FrozenList[FGJ.Type], Xs: list[FGJ.TypeVar], T_old: FGJ.Type) -> FGJ.Type:
     """
     ['T/'X]Type(S,T,U,V) -> ['T/'X]TypeVar(X,Y,Z) or ['T/'X]NonTypeVar(N,P,Q)
     """
@@ -87,7 +90,7 @@ def mtype(method_name: str, c: FGJ.NonTypeVar, CT: FGJ.ClassTable, PI: FGJ.Pi) -
         case FGJ.NonTypeVar(name, ts) if method_name in CT[name].methods.keys():
             class_def = CT[name]
             gen_type_ano = class_def.generic_type_annotation
-            method_signature = PI[(FGJ.ClassHeader(class_def.name, gen_type_ano), method_name)][0] # Why Set? Get a random ano? ???
+            method_signature = list(PI[(FGJ.ClassHeader(class_def.name, frozendict(gen_type_ano.items())), method_name)])[0] # Why Set? Get a random ano? ???
             xs = list(gen_type_ano.keys())
             # subted_gen_type_ano: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {sub(ts, xs, yi): sub(ts, xs, pi) for yi, pi in method_signature.gen_typ_ano.items()}
             subted_gen_type_ano: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {yi: sub(ts, xs, pi) for yi, pi in method_signature.gen_typ_ano.items()}
@@ -111,7 +114,7 @@ def is_valid_method_override(method_name: str, n: FGJ.NonTypeVar, method_sign_lo
     ps = list(method_sign_lower.gen_typ_ano.values())
     qs = list(method_sign_upper.gen_typ_ano.values())
     ysTV = list(method_sign_lower.gen_typ_ano.keys())
-    ys: list[FGJ.Type] = list(method_sign_lower.gen_typ_ano.keys())
+    ys: FrozenList[FGJ.Type] = FrozenList(method_sign_lower.gen_typ_ano.keys())
     zs = list(method_sign_upper.gen_typ_ano.keys())
     ts = method_sign_lower.types_of_arguments
     us = method_sign_upper.types_of_arguments

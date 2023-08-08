@@ -3,6 +3,8 @@ import FGJ_GT_AST as FGJ_GT
 import FGJ_auxiliary_typing as AUX
 import FGJ_GT_auxiliary_functions as AUX_GT
 
+from frozenlist import FrozenList
+
 
 def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Type, FGJ.Type], FGJ.GenTypeAno]:
     #                        -//-                          -> tuple[dict[FGJ_GT.TypeVarA, FGJ.Type], FGJ.GenTypeAno]:
@@ -17,10 +19,10 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
 
                     # adapt
                     case FGJ_GT.SubTypeC(FGJ.NonTypeVar(n1, ts), FGJ.NonTypeVar(n2, us)) if AUX_GT.isSubtypeByName(n1, n2, CT):
-                        xs = [FGJ.TypeVar("x" + str(i)) for i, _ in enumerate(ts)]
+                        xs: FrozenList[FGJ.Type] = FrozenList([FGJ.TypeVar("x" + str(i)) for i, _ in enumerate(ts)])
                         ns = AUX_GT.genericSupertype(n1, xs, n2, CT)
                         C_prime.remove(constraint)
-                        subtedns = [AUX.sub(ts, xs, ni) for ni in ns]
+                        subtedns = FrozenList([AUX.sub(ts, xs, ni) for ni in ns])
                         C_prime.add(FGJ_GT.EqualC(FGJ.NonTypeVar(n2, subtedns), FGJ.NonTypeVar(n2, us)))
                         changed = True
 
