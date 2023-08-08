@@ -1,7 +1,6 @@
 import FGJ_AST as FGJ
 
 from dataclasses import dataclass
-from hset import hSet
 
 
 @dataclass(frozen=True)
@@ -30,15 +29,15 @@ class EqualC:
 sc = SubTypeC | EqualC
 
 # oc = set[set[sc]]
-oc = hSet[hSet[sc]]
+oc = frozenset[frozenset[sc]]
 
 c = oc | sc
 
 # C = set[c]
-C = hSet[c]
+C = frozenset[c]
 
 
-lambdas = dict[tuple[FGJ.ClassHeader, str], set[FGJ.MethodSign]]
+lambdas = dict[tuple[FGJ.ClassHeader, str], frozenset[FGJ.MethodSign]]
 
 µs = dict[FGJ.Variable, FGJ.Type]
 

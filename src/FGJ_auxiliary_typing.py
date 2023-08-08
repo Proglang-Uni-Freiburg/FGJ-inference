@@ -87,7 +87,7 @@ def mtype(method_name: str, c: FGJ.NonTypeVar, CT: FGJ.ClassTable, PI: FGJ.Pi) -
         case FGJ.NonTypeVar(name, ts) if method_name in CT[name].methods.keys():
             class_def = CT[name]
             gen_type_ano = class_def.generic_type_annotation
-            method_signature = list(PI[(FGJ.ClassHeader(class_def.name, gen_type_ano), method_name)])[0] # Why Set? Get a random ano? ???
+            method_signature = PI[(FGJ.ClassHeader(class_def.name, gen_type_ano), method_name)][0] # Why Set? Get a random ano? ???
             xs = list(gen_type_ano.keys())
             # subted_gen_type_ano: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {sub(ts, xs, yi): sub(ts, xs, pi) for yi, pi in method_signature.gen_typ_ano.items()}
             subted_gen_type_ano: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {yi: sub(ts, xs, pi) for yi, pi in method_signature.gen_typ_ano.items()}

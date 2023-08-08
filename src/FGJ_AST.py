@@ -145,7 +145,7 @@ class MethodSign:
     return_type: Type
 
 
-Pi = dict[tuple[ClassHeader, str], set[MethodSign]]
+Pi = dict[tuple[ClassHeader, str], frozenset[MethodSign]]
 
 Delta = dict[TypeVar, NonTypeVar]
 Env = dict[Variable, Type]
