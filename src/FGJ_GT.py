@@ -41,18 +41,22 @@ program = read_from("src\example_code.txt")
 
 lambdas, c = FJType(dict(), program.CT["Pair"], program.CT)
 
-print("LAMBDAS:\n", lambdas_to_string(lambdas))
-print("C:\n", constraint_set_to_string(c))
+# print("LAMBDAS:\n", lambdas_to_string(lambdas))
+# print("C:\n", constraint_set_to_string(c))
 
-o, delta = Unify(c, dict(program.CT["Pair"].generic_type_annotation), program.CT)
+o, ysps = Unify(c, dict(program.CT["Pair"].generic_type_annotation), program.CT)
 
-print("o:")
-for k, v in o.items():
-    print(f"{k}: {v}")
+# print("o:")
+# for k, v in o.items():
+#     print(f"{k}: {v}")
 
-print("/\:")
-for k, v in delta.items():
-    print(f"{k}: {v}")
+for (ch, n), ms in lambdas.items():
+    print(ch, n, ":")
+    # print(ms)
+    for m in ms:
+        print("\t", m)
+        print("\t", FGJ.MethodSign(ysps, [o[a] for a in m.types_of_arguments], o[m.return_type]))
+
 
 # d = TypeInference(dict(), program.CT["Pair"], program.CT)
 

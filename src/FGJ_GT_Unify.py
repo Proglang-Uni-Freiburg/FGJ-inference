@@ -8,7 +8,6 @@ from frozenlist import FrozenList
 
 def exhaustivelyFig1617(C_prime: set[FGJ_GT.sc], env: FGJ.Delta, CT: FGJ.ClassTable) -> set[FGJ_GT.sc]:
     # step 1
-    print("Start:\n", constraint_set_to_string(C_prime))
     changed = True
     newC_prime: set[FGJ_GT.sc] = set()
     while changed:
@@ -27,6 +26,7 @@ def exhaustivelyFig1617(C_prime: set[FGJ_GT.sc], env: FGJ.Delta, CT: FGJ.ClassTa
                     newC_prime.add(FGJ_GT.EqualC(FGJ.NonTypeVar(n2, subtedns), FGJ.NonTypeVar(n2, us)))
                     changed = True
 
+                # is this implied by the example 8 or not?
                 # case FGJ_GT.SubTypeC(FGJ.TypeVar(n1), FGJ.NonTypeVar(n2, us)) if AUX_GT.isSubtypeByName(env[FGJ.TypeVar(n1)].name, n2, CT):
                 #     ns = AUX_GT.genericSupertype(env[FGJ.TypeVar(n1)].name, env[FGJ.TypeVar(n1)].types, n2, CT)
                 #     newC_prime.remove(constraint)
@@ -64,6 +64,10 @@ def exhaustivelyFig1617(C_prime: set[FGJ_GT.sc], env: FGJ.Delta, CT: FGJ.ClassTa
                     changed = True
 
                 # swap X = a -> a = X?
+                case FGJ_GT.EqualC(FGJ.TypeVar(n), FGJ_GT.TypeVarA(a)):
+                    newC_prime.remove(constraint)
+                    newC_prime.add(FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ.TypeVar(n)))
+                    changed = True
 
                 # 2 Arguments
             for constraint2 in C_prime:
@@ -126,13 +130,12 @@ def constraint_set_to_string(C: FGJ_GT.C) -> str:
 def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Type, FGJ.Type], FGJ.GenTypeAno]:
     #                        -//-                          -> tuple[dict[FGJ_GT.TypeVarA, FGJ.Type], FGJ.GenTypeAno]:
     for C_prime in AUX_GT.gen_C_prime(C):
-        # TESTING
         exhaustivelyFig1617(C_prime, env, CT)
-        # temp_removed_constraints: list[FGJ_GT.sc] = list()
 
         # step 2
         noSolution = False
         lowerupperBs: list[tuple[FGJ_GT.SubTypeC, FGJ_GT.SubTypeC]] = list()
+        removeLater: set[FGJ_GT.SubTypeC] = set()
         newC_prime = C_prime.copy()
         for constraint in C_prime:
             # skip step 2 if C_prime is already in solved form
@@ -142,7 +145,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
             match constraint:
                 # 1 Argument
                 # Own C<Ts> = D<Us> -> No solution
-                case FGJ_GT.EqualC(FGJ.NonTypeVar(_), FGJ.NonTypeVar(_)):
+                case FGJ_GT.EqualC(FGJ.NonTypeVar(c, _), FGJ.NonTypeVar(d, _)) if d != c:
                     noSolution = True
                     break
 
@@ -164,7 +167,10 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
                                 break
                     lowerupperBs.append((constraint, upperC))
                     newC_prime.remove(constraint)
-                    newC_prime.add(FGJ_GT.SubTypeC(constraint.t1, upperC.t2))
+                    new_constraint = FGJ_GT.SubTypeC(constraint.t1, upperC.t2)
+                    newC_prime.add(new_constraint)
+                    # do we need to remove them later or are they removed by the rules of 16/17?
+                    removeLater.add(new_constraint)
 
             # 2 Arguments
             # 2
@@ -192,7 +198,6 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
             continue
 
         # solving expandLB
-        # exhaustivelyFig1617(C_prime, env, CT)
         for lowerC, upperC in lowerupperBs:
             cts = lowerC.t1
             dts = upperC.t2
@@ -201,6 +206,10 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
             xs = FrozenList(FGJ.TypeVar("x" + str(i)) for i, _ in enumerate(cts.types))
             ns = AUX_GT.genericSupertypeList(cts.name, xs, dts.name, CT)
             C_prime |= {frozenset(frozenset([FGJ_GT.EqualC(lowerC.t2, AUX.sub(cts.types, xs, ni))]) for ni in ns)}
+
+        C_prime = exhaustivelyFig1617(C_prime, env, CT)
+        # remove the constraint previously added
+        C_prime = C_prime.difference(removeLater)
 
         # step 3
         for C_prime2 in AUX_GT.gen_C_prime(C_prime):
@@ -264,9 +273,6 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
                     case FGJ_GT.SubTypeC(_):
                         C_sub.add(constraint)
 
-            print(constraint_set_to_string(C_equal))
-            print(constraint_set_to_string(C_sub))
-
             ass: list[FGJ_GT.TypeVarA] = [c.t1 for c in C_equal]
 
             # 'Z' is not allowed to occur already, do a check here or search for another
@@ -274,7 +280,11 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
             Y_fresh = FGJ.TypeVar(start)
             Ys_fresh = [FGJ.TypeVar(start + str(i)) for i, _ in enumerate(ass)]
             # why only X in C_sub? why not all T?
+            print(constraint_set_to_string(C_equal))
+            print(constraint_set_to_string(C_sub))
             o = {c.t1: AUX_GT.sub(Ys_fresh, ass, c.t2) for c in C_equal} | {ai: yi for ai, yi in zip(ass, Ys_fresh)} | {c.t1: c.t2 for c in C_sub}
+            for k, v in o.items():
+                print(f"{k} -> {v}")
             # all c from C_sub?
             y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {Y_fresh: AUX_GT.sub(Ys_fresh, ass, c.t2) for c in C_sub}
             return o, y
