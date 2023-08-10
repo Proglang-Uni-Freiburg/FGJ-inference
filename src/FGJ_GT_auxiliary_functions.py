@@ -71,25 +71,27 @@ def sub(ys: list[FGJ.TypeVar], ass: list[FGJ_GT.TypeVarA], t: FGJ.Type) -> FGJ.T
     return t
 
 
-def subConstraint(t: FGJ.Type, a: FGJ_GT.TypeVarA, C: set[FGJ_GT.sc]):
+def subConstraint(t: FGJ.Type, a: FGJ_GT.TypeVarA, C: set[FGJ_GT.sc]) -> set[FGJ_GT.sc]:
+    newC = C.copy()
     for constraint in C:
         match constraint:
             case FGJ_GT.EqualC(t1, t2):
-                C.remove(constraint)
-                C.add(FGJ_GT.EqualC(subSingle(t1, a), subSingle(t2, a)))
+                newC.remove(constraint)
+                newC.add(FGJ_GT.EqualC(subSingle(t, t1, a), subSingle(t, t2, a)))
             case FGJ_GT.SubTypeC(t1, t2):
-                C.remove(constraint)
-                C.add(FGJ_GT.SubTypeC(subSingle(t1, a), subSingle(t2, a)))
+                newC.remove(constraint)
+                newC.add(FGJ_GT.SubTypeC(subSingle(t, t1, a), subSingle(t, t2, a)))
+    return newC
 
 
-def subSingle(t: FGJ.Type, a: FGJ_GT.TypeVarA) -> FGJ.Type:
-    match t:
+def subSingle(t: FGJ.Type, t1: FGJ.Type, a: FGJ_GT.TypeVarA) -> FGJ.Type:
+    match t1:
         case FGJ_GT.TypeVarA(a.name):
             return t
         case FGJ.TypeVar(_):
-            return t
+            return t1
         case FGJ.NonTypeVar(n, ts):
-            return FGJ.NonTypeVar(n, FrozenList([subSingle(ti, a) for ti in ts]))
+            return FGJ.NonTypeVar(n, FrozenList([subSingle(t, ti, a) for ti in ts]))
     raise Exception("CANT GO HERE - BUT TYPECHECKER")
 
 
@@ -115,6 +117,20 @@ def genericSupertype(C: str, ts: FrozenList[FGJ.Type], D: str, CT: FGJ.ClassTabl
         Cprime = superclass.name
         ms = superclass.types
         return genericSupertype(Cprime, FrozenList([AUX.sub(ts, ys, m) for m in ms]), D, CT)
+
+
+# genericSuperType as List
+def genericSupertypeList(C: str, ts: FrozenList[FGJ.Type], D: str, CT: FGJ.ClassTable) -> list[FGJ.Type]:
+    if C == D:
+        return [FGJ.NonTypeVar(D, ts)]
+    else:
+        class_def = CT[C]
+        ys = list(class_def.generic_type_annotation.keys())
+        superclass = class_def.superclass
+        Cprime = superclass.name
+        ms = superclass.types
+        tsPrime = FrozenList([AUX.sub(ts, ys, m) for m in ms])
+        return [FGJ.NonTypeVar(C, ts)] + genericSupertypeList(Cprime, tsPrime, D, CT)
 
 
 def isSubtypeByName(C: str, D: str, CT: FGJ.ClassTable) -> bool:

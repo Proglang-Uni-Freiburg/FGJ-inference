@@ -62,3 +62,7 @@ match dont need delta
 
 expandLB - check if subtype possible
  - add constraint C<T><D<U> and mark
+
+----
+
+Adopt terminiert nicht

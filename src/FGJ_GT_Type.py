@@ -107,5 +107,9 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
                 sc |= constraint
             return ca, sc
 
+        case FGJ.Cast(type1, expr):
+            _, Cr = TypeExpr(teta, expr, CT)
+            return type1, Cr
+
         case _:
             raise Exception("CANT GO HERE - BUT TYPECHECKER", type(expr))
