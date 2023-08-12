@@ -130,8 +130,7 @@ def constraint_set_to_string(C: FGJ_GT.C) -> str:
 def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Type, FGJ.Type], FGJ.GenTypeAno]:
     #                        -//-                          -> tuple[dict[FGJ_GT.TypeVarA, FGJ.Type], FGJ.GenTypeAno]:
     for C_prime in AUX_GT.gen_C_prime(C):
-        print("C_PRIME:\n", constraint_set_to_string(C_prime))
-        exhaustivelyFig1617(C_prime, env, CT)
+        C_prime = exhaustivelyFig1617(C_prime, env, CT)
 
         # step 2
         noSolution = False
@@ -285,7 +284,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
             print(constraint_set_to_string(C_sub))
             o = {c.t1: AUX_GT.sub(Ys_fresh, ass, c.t2) for c in C_equal} | {ai: yi for ai, yi in zip(ass, Ys_fresh)} | {c.t1: c.t2 for c in C_sub}
             for k, v in o.items():
-                print(f"{k} -> {v}")
+                print(f"o[{k}] = {v}")
             # all c from C_sub?
             y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {Y_fresh: AUX_GT.sub(Ys_fresh, ass, c.t2) for c in C_sub}
             return o, y

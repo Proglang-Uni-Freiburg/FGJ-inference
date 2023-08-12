@@ -22,7 +22,7 @@ def is_solved_form(C: set[FGJ_GT.sc]) -> bool:
                 pass
             case FGJ_GT.EqualC(FGJ_GT.TypeVarA(_), FGJ_GT.TypeVarA(_)):
                 pass
-            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(_)) if a not in lst:
+            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(_)) if a not in lst and not occoursIn(FGJ_GT.TypeVarA(a), constraint.t2):
                 lst.append(a)
             case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(_)) if a not in lst and not occoursIn(FGJ_GT.TypeVarA(a), constraint.t2):
                 lst.append(a)
@@ -55,12 +55,10 @@ def subOne(y: FGJ.TypeVar, a: FGJ_GT.TypeVarA, t: FGJ.Type) -> FGJ.Type:
     match t:
         case FGJ_GT.TypeVarA(a.name):
             return y
-        case FGJ.TypeVar(_):
-            return t
         case FGJ.NonTypeVar(n, ts):
             return FGJ.NonTypeVar(n, FrozenList([subOne(y, a, ti) for ti in ts]))
         case _:
-            raise Exception("CANT GO HERE - BUT TYPECHECKER")
+            return t
 
 
 def sub(ys: list[FGJ.TypeVar], ass: list[FGJ_GT.TypeVarA], t: FGJ.Type) -> FGJ.Type:
@@ -86,22 +84,20 @@ def subSingle(t: FGJ.Type, t1: FGJ.Type, a: FGJ_GT.TypeVarA) -> FGJ.Type:
     match t1:
         case FGJ_GT.TypeVarA(a.name):
             return t
-        case FGJ.TypeVar(_):
-            return t1
         case FGJ.NonTypeVar(n, ts):
             return FGJ.NonTypeVar(n, FrozenList([subSingle(t, ti, a) for ti in ts]))
-    raise Exception("CANT GO HERE - BUT TYPECHECKER")
+        case _:
+            return t1
 
 
 def occoursIn(a: FGJ_GT.TypeVarA, b: FGJ.Type) -> bool:
     match b:
-        case FGJ.TypeVar(_):
-            return False
-        case FGJ.NonTypeVar(_, ts):
-            return any([occoursIn(a, ti) for ti in ts])
         case FGJ_GT.TypeVarA(a.name):
             return True
-    raise Exception("CANT GO HERE -> BUT TYPECHECKER")
+        case FGJ.NonTypeVar(_, ts):
+            return any([occoursIn(a, ti) for ti in ts])
+        case _:
+            return False
 
 
 # genericSupertype

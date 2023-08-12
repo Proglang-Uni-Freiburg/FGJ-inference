@@ -4,7 +4,9 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class TypeVarA(FGJ.TypeVar):
+class TypeVarA(FGJ.Type):
+    name: str
+
     def __str__(self) -> str:
         return self.name
 

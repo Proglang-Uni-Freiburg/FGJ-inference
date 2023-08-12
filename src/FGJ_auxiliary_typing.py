@@ -1,5 +1,6 @@
 from typing import Optional
 import FGJ_AST as FGJ
+import FGJ_GT_AST as FGJ_GT
 
 from frozendict import frozendict
 from frozenlist import FrozenList
@@ -10,6 +11,8 @@ def sub_single(T: FGJ.Type, X: FGJ.TypeVar, T_old: FGJ.Type) -> FGJ.Type:
     [T/X]Type(S,T,U,V) -> [T/X]TypeVar(X,Y,Z) or [T/X]NonTypeVar(N,P,Q)
     """
     match T_old:
+        case FGJ_GT.TypeVarA(_):
+            return T_old
         case FGJ.TypeVar(X.name):
             return T
         case FGJ.TypeVar(_):
