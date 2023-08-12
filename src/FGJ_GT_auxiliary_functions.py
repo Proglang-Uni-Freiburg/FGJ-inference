@@ -99,22 +99,26 @@ def occoursIn(a: FGJ_GT.TypeVarA, b: FGJ.Type) -> bool:
 
 
 # genericSupertype
-def genericSupertype(C: str, ts: FrozenList[FGJ.Type], D: str, CT: FGJ.ClassTable) -> FrozenList[FGJ.Type]:
+def genericSupertype(C: str, ts: FrozenList[FGJ.Type], D: str, env: FGJ.Delta, CT: FGJ.ClassTable) -> FrozenList[FGJ.Type]:
     if C == D:
         return ts
+    elif C not in CT:
+        return genericSupertype(env[FGJ.TypeVar(C)].name, ts, D, env, CT)
     else:
         class_def = CT[C]
         ys = list(class_def.generic_type_annotation.keys())
         superclass = class_def.superclass
         Cprime = superclass.name
         ms = superclass.types
-        return genericSupertype(Cprime, FrozenList([AUX.sub(ts, ys, m) for m in ms]), D, CT)
+        return genericSupertype(Cprime, FrozenList([AUX.sub(ts, ys, m) for m in ms]), D, env, CT)
 
 
 # genericSuperType as List
-def genericSupertypeList(C: str, ts: FrozenList[FGJ.Type], D: str, CT: FGJ.ClassTable) -> list[FGJ.Type]:
+def genericSupertypeList(C: str, ts: FrozenList[FGJ.Type], D: str, env: FGJ.Delta, CT: FGJ.ClassTable) -> list[FGJ.Type]:
     if C == D:
         return [FGJ.NonTypeVar(D, ts)]
+    elif C not in CT:
+        return genericSupertypeList(env[FGJ.TypeVar(C)].name, ts, D, env, CT)
     else:
         class_def = CT[C]
         ys = list(class_def.generic_type_annotation.keys())
@@ -122,7 +126,7 @@ def genericSupertypeList(C: str, ts: FrozenList[FGJ.Type], D: str, CT: FGJ.Class
         Cprime = superclass.name
         ms = superclass.types
         tsPrime = FrozenList([AUX.sub(ts, ys, m) for m in ms])
-        return [FGJ.NonTypeVar(C, ts)] + genericSupertypeList(Cprime, tsPrime, D, CT)
+        return [FGJ.NonTypeVar(C, ts)] + genericSupertypeList(Cprime, tsPrime, D, env, CT)
 
 
 def isSubtypeByName(C: str, D: str, CT: FGJ.ClassTable) -> bool:
