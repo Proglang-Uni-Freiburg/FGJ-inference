@@ -68,24 +68,22 @@ def sub(ys: list[FGJ.TypeVar], ass: list[FGJ_GT.TypeVarA], t: FGJ.Type) -> FGJ.T
 
 
 def subConstraint(t: FGJ.Type, a: FGJ_GT.TypeVarA, C: set[FGJ_GT.sc]) -> set[FGJ_GT.sc]:
-    newC = C.copy()
+    newC = set()
     for constraint in C:
         match constraint:
             case FGJ_GT.EqualC(t1, t2):
-                newC.remove(constraint)
-                newC.add(FGJ_GT.EqualC(subSingle(t, t1, a), subSingle(t, t2, a)))
+                newC.add(FGJ_GT.EqualC(subSingle(t, a, t1), subSingle(t, a, t2)))
             case FGJ_GT.SubTypeC(t1, t2):
-                newC.remove(constraint)
-                newC.add(FGJ_GT.SubTypeC(subSingle(t, t1, a), subSingle(t, t2, a)))
+                newC.add(FGJ_GT.SubTypeC(subSingle(t, a, t1), subSingle(t, a, t2)))
     return newC
 
 
-def subSingle(t: FGJ.Type, t1: FGJ.Type, a: FGJ_GT.TypeVarA) -> FGJ.Type:
+def subSingle(t: FGJ.Type, a: FGJ_GT.TypeVarA, t1: FGJ.Type) -> FGJ.Type:
     match t1:
         case FGJ_GT.TypeVarA(a.name):
             return t
         case FGJ.NonTypeVar(n, ts):
-            return FGJ.NonTypeVar(n, FrozenList([subSingle(t, ti, a) for ti in ts]))
+            return FGJ.NonTypeVar(n, FrozenList([subSingle(t, a, ti) for ti in ts]))
         case _:
             return t1
 

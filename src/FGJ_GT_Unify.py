@@ -215,9 +215,10 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
         for C_prime2 in AUX_GT.gen_C_prime(C_prime):
             noSolution = False
 
-            changed = True
-            while changed:
-                changed = False
+            changed = False
+            changing = True
+            while changing:
+                changing = False
 
                 if noSolution:
                     break
@@ -231,12 +232,13 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
                                 break
                             temp_C2 = C_prime2.copy()
                             temp_C2.remove(constraint)
-                            newC_prime2 = AUX_GT.subConstraint(t, FGJ_GT.TypeVarA(a), temp_C2)
-                            if not newC_prime2.difference(temp_C2):
-                                continue
-                            newC_prime2.add(constraint)
-                            C_prime2 = newC_prime2
-                            break
+                            newTempC2 = AUX_GT.subConstraint(t, FGJ_GT.TypeVarA(a), temp_C2)
+                            if newTempC2.difference(temp_C2):
+                                newTempC2.add(constraint)
+                                C_prime2 = newTempC2
+                                changing = True
+                                changed = True
+                                break
 
             # skip this C_prime2 because it has no solution
             if noSolution:
@@ -249,18 +251,23 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
 
             # step 5
             # not sure if we can do both rules in one for-loop since sub may produce a case fpr elim
+            newTempC2 = C_prime2.copy()
             for constraint in C_prime2:
                 match constraint:
                     # is this exhaustively
                     case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)):
-                        C_prime2.remove(constraint)
-                        AUX_GT.subConstraint(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b), C_prime2)
-                        C_prime2.add(FGJ_GT.EqualC(FGJ_GT.TypeVarA(b), FGJ_GT.TypeVarA(a)))
+                        newTempC2.remove(constraint)
+                        newTempC2 = AUX_GT.subConstraint(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b), newTempC2)
+                        newTempC2.add(FGJ_GT.EqualC(FGJ_GT.TypeVarA(b), FGJ_GT.TypeVarA(a)))
+
+            C_prime2 = newTempC2.copy()
 
             for constraint in C_prime2:
                 match constraint:
                     case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)) if a == b:
-                        C_prime2.remove(constraint)
+                        newTempC2.remove(constraint)
+
+            C_prime2 = newTempC2
 
             # step 6
             C_equal: set[FGJ_GT.EqualC] = set()
@@ -273,20 +280,22 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
                     case FGJ_GT.SubTypeC(_):
                         C_sub.add(constraint)
 
-            ass: list[FGJ_GT.TypeVarA] = [c.t1 for c in C_equal]
+            ass: list[FGJ_GT.TypeVarA] = list({c.t1 for c in C_sub if type(c.t1) is FGJ_GT.TypeVarA})
 
             # 'Z' is not allowed to occur already, do a check here or search for another
             start = "Z"
-            Y_fresh = FGJ.TypeVar(start)
-            Ys_fresh = [FGJ.TypeVar(start + str(i)) for i, _ in enumerate(ass)]
+            Z_fresh = FGJ.TypeVar(start)
+            Zs_fresh = [FGJ.TypeVar(start + str(i)) for i, _ in enumerate(ass)]
             # why only X in C_sub? why not all T?
-            print(constraint_set_to_string(C_equal))
-            print(constraint_set_to_string(C_sub))
-            o = {c.t1: AUX_GT.sub(Ys_fresh, ass, c.t2) for c in C_equal} | {ai: yi for ai, yi in zip(ass, Ys_fresh)} | {c.t1: c.t2 for c in C_sub}
+            print("Eq:", constraint_set_to_string(C_equal))
+            print("Sub:", constraint_set_to_string(C_sub))
+            print(ass)
+            print(Zs_fresh)
+            o = {c.t1: AUX_GT.sub(Zs_fresh, ass, c.t2) for c in C_equal} | {ai: zi for ai, zi in zip(ass, Zs_fresh)} | {c.t1: c.t2 for c in C_sub if type(c.t2) is FGJ.TypeVar}
             for k, v in o.items():
                 print(f"o[{k}] = {v}")
             # all c from C_sub?
-            y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {Y_fresh: AUX_GT.sub(Ys_fresh, ass, c.t2) for c in C_sub}
+            y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {Z_fresh: AUX_GT.sub(Zs_fresh, ass, c.t2) for c in C_sub if type(c.t2) if FGJ.NonTypeVar}
             return o, y
 
     raise Exception("NO SOLUTION FOUND")
