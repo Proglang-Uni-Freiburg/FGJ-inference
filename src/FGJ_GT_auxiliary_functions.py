@@ -4,6 +4,7 @@ import FGJ_auxiliary_typing as AUX
 
 from typing import Generator, Any
 from frozenlist import FrozenList
+from itertools import product
 
 
 def fresh(name: str) -> Generator[FGJ_GT.TypeVarA, Any, None]:
@@ -41,16 +42,13 @@ def gen_C_prime(C: FGJ_GT.C) -> Generator[set[FGJ_GT.sc], Any, Any]:
                 sc_set.add(c)
             case _:
                 oc_list += [c]
-    for oc in oc_list:
-        out_set: set[FGJ_GT.sc] = set()
-        for ssci in oc:
-            out_set |= ssci
-        yield out_set | sc_set
 
-
-def expandLB(lowerC: FGJ_GT.SubTypeC, upperC: FGJ_GT.SubTypeC, CT: FGJ.ClassTable) -> FGJ_GT.oc:
-    # return {FGJ_GT.EqualC(FGJ_GT.TypeVarA(lowerC.t2), AUX.sub(ts, xs, n)) for }
-    ...
+    for comb in product(*oc_list):
+        out = sc_set.copy()
+        for lst in comb:
+            for elem in lst:
+                out.add(elem)
+        yield out
 
 
 def subOne(y: FGJ.TypeVar, a: FGJ_GT.TypeVarA, t: FGJ.Type) -> FGJ.Type:

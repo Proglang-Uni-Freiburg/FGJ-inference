@@ -25,7 +25,7 @@ def constraint_set_to_string(C: FGJ_GT.C) -> str:
             case FGJ_GT.SubTypeC() | FGJ_GT.EqualC():
                 out.append(str(constraint))
             case _:
-                out.append("(" + ", ".join(constraint_set_to_string(con) for con in constraint) + ")")
+                out.append("(" + ", ".join("(" + constraint_set_to_string(con) + ")" for con in constraint) + ")")
     return ", ".join(out)
 
 
@@ -42,7 +42,7 @@ program = read_from("src\example_code.txt")
 lambdas, c = FJType(dict(), program.CT["Pair"], program.CT)
 
 # print("LAMBDAS:\n", lambdas_to_string(lambdas))
-# print("C:\n", constraint_set_to_string(c))
+print("C:\n", constraint_set_to_string(c))
 
 o, ysps = Unify(c, dict(program.CT["Pair"].generic_type_annotation), program.CT)
 
