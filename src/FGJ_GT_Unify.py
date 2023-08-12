@@ -225,7 +225,9 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
                 raise Exception("CANT GO HERE - BUT TYPECHECKER")
             xs = FrozenList(FGJ.TypeVar("x" + str(i)) for i, _ in enumerate(cts.types))
             ns = AUX_GT.genericSupertypeList(cts.name, xs, dts.name, env, CT)
-            C_prime |= {frozenset(frozenset([FGJ_GT.EqualC(lowerC.t2, AUX.sub(cts.types, xs, ni))]) for ni in ns)}
+            new_oc = frozenset(frozenset([FGJ_GT.EqualC(lowerC.t2, AUX.sub(cts.types, xs, ni))]) for ni in ns)
+            print(constraint_set_to_string({new_oc}))
+            C_prime |= {new_oc}
 
         C_prime = exhaustivelyFig1617(C_prime, env, CT)
         # remove the constraint previously added
@@ -272,7 +274,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
                 raise Exception("NOT IN SOLVED FORM: " + constraint_set_to_string(C_prime2))
 
             # step 5
-            # not sure if we can do both rules in one for-loop since sub may produce a case fpr elim
+            # not sure if we can do both rules in one for-loop since sub may produce a case for elim
             newTempC2 = C_prime2.copy()
             for constraint in C_prime2:
                 match constraint:
@@ -291,6 +293,24 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
 
             C_prime2 = newTempC2
 
+            # X<> -> X
+            newC_prime2 = set()
+            for constraint in C_prime2:
+                match constraint:
+                    case FGJ_GT.EqualC(t1, t2):
+                        if t1 in env:
+                            t1 = FGJ.TypeVar(t1.name)
+                        if t2 in env:
+                            t2 = FGJ.TypeVar(t2.name)
+                        newC_prime2.add(FGJ_GT.EqualC(t1, t2))
+                    case FGJ_GT.SubTypeC(t1, t2):
+                        if t1 in env:
+                            t1 = FGJ.TypeVar(t1.name)
+                        if t2 in env:
+                            t2 = FGJ.TypeVar(t2.name)
+                        newC_prime2.add(FGJ_GT.SubTypeC(t1, t2))
+            C_prime2 = newC_prime2
+
             # step 6
             C_equal: set[FGJ_GT.EqualC] = set()
             C_sub: set[FGJ_GT.SubTypeC] = set()
@@ -306,18 +326,18 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
 
             # 'Z' is not allowed to occur already, do a check here or search for another
             start = "Z"
-            Z_fresh = FGJ.TypeVar(start)
+            # Z_fresh = FGJ.TypeVar(start)
             Zs_fresh = [FGJ.TypeVar(start + str(i)) for i, _ in enumerate(ass)]
             # why only X in C_sub? why not all T?
             print("Eq:", constraint_set_to_string(C_equal))
             print("Sub:", constraint_set_to_string(C_sub))
-            print(ass)
-            print(Zs_fresh)
-            o = {ai: zi for ai, zi in zip(ass, Zs_fresh)} | {c.t1: AUX_GT.sub(Zs_fresh, ass, c.t2) for c in C_equal} | {c.t1: c.t2 for c in C_sub if type(c.t2) is FGJ.TypeVar}
+            o = {c.t1: AUX_GT.sub(Zs_fresh, ass, c.t2) for c in C_equal} | {c.t1: c.t2 for c in C_sub if type(c.t2) is FGJ.TypeVar} | {ai: zi for ai, zi in zip(ass, Zs_fresh)}
             for k, v in o.items():
                 print(f"o[{k}] = {v}")
             # all c from C_sub?
-            y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {Z_fresh: AUX_GT.sub(Zs_fresh, ass, c.t2) for c in C_sub if type(c.t2) if FGJ.NonTypeVar}
+            assert len(Zs_fresh) == len(ass)
+            # y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {Z_fresh: AUX_GT.sub(Zs_fresh, ass, c.t2) for c in C_sub if type(c.t2) if FGJ.NonTypeVar}
+            y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {zi: AUX_GT.sub(Zs_fresh, ass, c.t2) for zi, c in zip(Zs_fresh, C_sub) if type(c.t2) is FGJ.NonTypeVar}
             return o, y
 
     raise Exception("NO SOLUTION FOUND")
