@@ -114,11 +114,12 @@ def genericSupertype(C: str, ts: FrozenList[FGJ.Type], D: str, env: FGJ.Delta, C
 
 
 # genericSuperType as List
+# not all are possible? Pair<X, Y> <= a0, a0 <= Object<>
 def genericSupertypeList(C: str, ts: FrozenList[FGJ.Type], D: str, env: FGJ.Delta, CT: FGJ.ClassTable) -> list[FGJ.Type]:
     if C == D:
         return [FGJ.NonTypeVar(D, ts)]
     elif C not in CT:
-        return genericSupertypeList(env[FGJ.TypeVar(C)].name, ts, D, env, CT)
+        return [FGJ.NonTypeVar(C, ts)] + genericSupertypeList(env[FGJ.TypeVar(C)].name, ts, D, env, CT)
     else:
         class_def = CT[C]
         ys = list(class_def.generic_type_annotation.keys())

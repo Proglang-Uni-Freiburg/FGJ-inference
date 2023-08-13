@@ -150,6 +150,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
                     newC_prime.add(FGJ_GT.SubTypeC(t1, t2))
         C_prime = newC_prime
 
+        # step 1
         C_prime = exhaustivelyFig1617(C_prime, env, CT)
 
         # step 2
@@ -181,7 +182,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
                     # finfing upperbound constraint
                     for con in C_prime:
                         match con:
-                            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(d, _)):
+                            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(d, _)) if a == b:
                                 upperC = con
                                 newC_prime.remove(con)
                                 break
@@ -211,20 +212,22 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
             if noSolution:
                 break
 
-        C_prime = newC_prime
-
         # skip to next C_prime because the current has no solution
         if noSolution:
             continue
 
+        C_prime = exhaustivelyFig1617(newC_prime, env, CT)
+
         # solving expandLB
         for lowerC, upperC in lowerupperBs:
+            print(lowerC, upperC)
             cts = lowerC.t1
             dts = upperC.t2
             if type(cts) is not FGJ.NonTypeVar or type(dts) is not FGJ.NonTypeVar:
                 raise Exception("CANT GO HERE - BUT TYPECHECKER")
             xs = FrozenList(FGJ.TypeVar("x" + str(i)) for i, _ in enumerate(cts.types))
             ns = AUX_GT.genericSupertypeList(cts.name, xs, dts.name, env, CT)
+            # no order -> different solutions
             new_oc = frozenset(frozenset([FGJ_GT.EqualC(lowerC.t2, AUX.sub(cts.types, xs, ni))]) for ni in ns)
             print(constraint_set_to_string({new_oc}))
             C_prime |= {new_oc}
