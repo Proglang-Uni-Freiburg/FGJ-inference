@@ -339,6 +339,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
                 print(f"o[{k}] = {v}")
             # all c from C_sub?
             assert len(Zs_fresh) == len(ass)
+            # if no arguments are given can new typevars be neccessary?
             # y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {Z_fresh: AUX_GT.sub(Zs_fresh, ass, c.t2) for c in C_sub if type(c.t2) if FGJ.NonTypeVar}
             y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {zi: AUX_GT.sub(Zs_fresh, ass, c.t2) for zi, c in zip(Zs_fresh, C_sub) if type(c.t2) is FGJ.NonTypeVar}
             return o, y
