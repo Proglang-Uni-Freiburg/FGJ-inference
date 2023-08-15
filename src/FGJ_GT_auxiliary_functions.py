@@ -161,3 +161,51 @@ def isConnected(a: FGJ_GT.TypeVarA, b: FGJ_GT.TypeVarA, C: FGJ_GT.C) -> bool:
                 if isConnected(FGJ_GT.TypeVarA(c), b, C):
                     return True
     return False
+
+
+def TypeVarToNonTypeVar_single(t: FGJ.Type) -> FGJ.Type:
+    match t:
+        case FGJ_GT.TypeVarA():
+            return t
+        case FGJ.TypeVar(name):
+            return FGJ.NonTypeVar(name, FrozenList())
+        case FGJ.NonTypeVar(name, ts):
+            return FGJ.NonTypeVar(name, FrozenList(TypeVarToNonTypeVar_single(ti) for ti in ts))
+    raise Exception("CANT GO HERE - BUT TYPECHECKER")
+
+
+def TypeVarToNonTypeVar(C: set[FGJ_GT.sc]) -> set[FGJ_GT.sc]:
+    """X -> X<>"""
+    newC_prime: set[FGJ_GT.EqualC | FGJ_GT.SubTypeC] = set()
+    for c in C:
+        match c:
+            case FGJ_GT.EqualC(t1, t2):
+                newC_prime.add(FGJ_GT.EqualC(TypeVarToNonTypeVar_single(t1), TypeVarToNonTypeVar_single(t2)))
+            case FGJ_GT.SubTypeC(t1, t2):
+                newC_prime.add(FGJ_GT.SubTypeC(TypeVarToNonTypeVar_single(t1), TypeVarToNonTypeVar_single(t2)))
+    return newC_prime
+
+
+def NonTypeVarToTypeVar_single(t: FGJ.Type, env: FGJ.Delta) -> FGJ.Type:
+    match t:
+        case FGJ_GT.TypeVarA():
+            return t
+        case FGJ.TypeVar():
+            return t
+        case FGJ.NonTypeVar(name, []) if FGJ.TypeVar(name) in env:
+            return FGJ.TypeVar(name)
+        case FGJ.NonTypeVar(name, ts):
+            return FGJ.NonTypeVar(name, FrozenList(NonTypeVarToTypeVar_single(ti, env) for ti in ts))
+    raise Exception("CANT GO HERE - BUT TYPECHECKER")
+
+
+def NonTypeVarToTypeVar(C: set[FGJ_GT.sc], env: FGJ.Delta) -> set[FGJ_GT.sc]:
+    """X<> -> X"""
+    newC_prime2: set[FGJ_GT.EqualC | FGJ_GT.SubTypeC] = set()
+    for constraint in C:
+        match constraint:
+            case FGJ_GT.EqualC(t1, t2):
+                newC_prime2.add(FGJ_GT.EqualC(NonTypeVarToTypeVar_single(t1, env), NonTypeVarToTypeVar_single(t2, env)))
+            case FGJ_GT.SubTypeC(t1, t2):
+                newC_prime2.add(FGJ_GT.SubTypeC(NonTypeVarToTypeVar_single(t1, env), NonTypeVarToTypeVar_single(t2, env)))
+    return newC_prime2

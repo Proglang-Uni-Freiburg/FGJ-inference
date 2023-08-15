@@ -130,25 +130,12 @@ def constraint_set_to_string(C: FGJ_GT.C) -> str:
 
 def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Type, FGJ.Type], FGJ.GenTypeAno]:
     #                        -//-                          -> tuple[dict[FGJ_GT.TypeVarA, FGJ.Type], FGJ.GenTypeAno]:
+    print("START:", constraint_set_to_string(C))
     for C_prime in AUX_GT.gen_C_prime(C):
+        print("PRIME:", constraint_set_to_string(C_prime))
 
         # X -> X<>
-        newC_prime = set()
-        for c in C_prime:
-            match c:
-                case FGJ_GT.EqualC(t1, t2):
-                    if type(t1) is FGJ.TypeVar:
-                        t1 = FGJ.NonTypeVar(t1.name, FrozenList())
-                    if type(t2) is FGJ.TypeVar:
-                        t2 = FGJ.NonTypeVar(t2.name, FrozenList())
-                    newC_prime.add(FGJ_GT.EqualC(t1, t2))
-                case FGJ_GT.SubTypeC(t1, t2):
-                    if type(t1) is FGJ.TypeVar:
-                        t1 = FGJ.NonTypeVar(t1.name, FrozenList())
-                    if type(t2) is FGJ.TypeVar:
-                        t2 = FGJ.NonTypeVar(t2.name, FrozenList())
-                    newC_prime.add(FGJ_GT.SubTypeC(t1, t2))
-        C_prime = newC_prime
+        C_prime = AUX_GT.TypeVarToNonTypeVar(C_prime)
 
         # step 1
         C_prime = exhaustivelyFig1617(C_prime, env, CT)
@@ -219,6 +206,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
         C_prime = exhaustivelyFig1617(newC_prime, env, CT)
 
         # solving expandLB
+        print("C:", constraint_set_to_string(C_prime))
         for lowerC, upperC in lowerupperBs:
             print(lowerC, upperC)
             cts = lowerC.t1
@@ -296,23 +284,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
 
             C_prime2 = newTempC2
 
-            # X<> -> X
-            newC_prime2 = set()
-            for constraint in C_prime2:
-                match constraint:
-                    case FGJ_GT.EqualC(t1, t2):
-                        if t1 in env:
-                            t1 = FGJ.TypeVar(t1.name)
-                        if t2 in env:
-                            t2 = FGJ.TypeVar(t2.name)
-                        newC_prime2.add(FGJ_GT.EqualC(t1, t2))
-                    case FGJ_GT.SubTypeC(t1, t2):
-                        if t1 in env:
-                            t1 = FGJ.TypeVar(t1.name)
-                        if t2 in env:
-                            t2 = FGJ.TypeVar(t2.name)
-                        newC_prime2.add(FGJ_GT.SubTypeC(t1, t2))
-            C_prime2 = newC_prime2
+            C_prime2 = AUX_GT.NonTypeVarToTypeVar(C_prime2, env)
 
             # step 6
             C_equal: set[FGJ_GT.EqualC] = set()
