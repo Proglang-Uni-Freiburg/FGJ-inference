@@ -2,7 +2,7 @@ import FGJ_AST as FGJ
 import FGJ_GT_AST as FGJ_GT
 import FGJ_auxiliary_typing as AUX
 
-from typing import Generator, Any
+from typing import Generator, Any, Optional
 from frozenlist import FrozenList
 from itertools import product
 
@@ -31,9 +31,9 @@ def is_solved_form(C: set[FGJ_GT.sc]) -> bool:
     return True
 
 
-def gen_C_prime(C: FGJ_GT.C) -> Generator[set[FGJ_GT.sc], Any, Any]:
+def gen_C_prime(C: FGJ_GT.C, oc_to_ord: Optional[dict[FGJ_GT.oc, list[list[FGJ_GT.sc]]]] = None) -> Generator[set[FGJ_GT.sc], Any, Any]:
     sc_set: set[FGJ_GT.sc] = set()
-    oc_list: list[FGJ_GT.oc] = list()
+    oc_list: list[list[list[FGJ_GT.sc]]] = list()
     for c in C:
         match c:
             case FGJ_GT.SubTypeC():
@@ -41,7 +41,10 @@ def gen_C_prime(C: FGJ_GT.C) -> Generator[set[FGJ_GT.sc], Any, Any]:
             case FGJ_GT.EqualC():
                 sc_set.add(c)
             case _:
-                oc_list += [c]
+                if oc_to_ord and c in oc_to_ord:
+                    oc_list.append(oc_to_ord[c])
+                else:
+                    oc_list.append([[sci for sci in oci] for oci in c])
 
     for comb in product(*oc_list):
         out = sc_set.copy()
@@ -192,7 +195,7 @@ def NonTypeVarToTypeVar_single(t: FGJ.Type, env: FGJ.Delta) -> FGJ.Type:
             return t
         case FGJ.TypeVar():
             return t
-        case FGJ.NonTypeVar(name, []) if FGJ.TypeVar(name) in env:
+        case FGJ.NonTypeVar(name, FrozenList()) if FGJ.TypeVar(name) in env:
             return FGJ.TypeVar(name)
         case FGJ.NonTypeVar(name, ts):
             return FGJ.NonTypeVar(name, FrozenList(NonTypeVarToTypeVar_single(ti, env) for ti in ts))

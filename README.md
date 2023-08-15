@@ -65,4 +65,6 @@ expandLB - check if subtype possible
 
 ----
 
-Adopt terminiert nicht
+Unify return o, ysEps
+
+what is ysEps - all possible ys with their bound?
