@@ -6,17 +6,21 @@ import FGJ_GT_auxiliary_functions as AUX_GT
 from frozenlist import FrozenList
 
 
-def exhaustivelyFig1617(C_prime: set[FGJ_GT.sc], env: FGJ.Delta, CT: FGJ.ClassTable) -> set[FGJ_GT.sc]:
-    # step 1
+def reduceAndAdapt(C_prime: set[FGJ_GT.sc], env: FGJ.Delta, CT: FGJ.ClassTable) -> set[FGJ_GT.sc]:
+    """
+    Step 1
+    Exhaustively applying rules of figure 16 and 17.
+    """
+
+    # As long as C_prime changes we try to apply a rule
     changed = True
     newC_prime: set[FGJ_GT.sc] = set()
     while changed:
         changed = False
         newC_prime = C_prime.copy()
         for constraint in C_prime:
+            # rules with one argument
             match constraint:
-                # 1 Argument
-
                 # adapt
                 case FGJ_GT.SubTypeC(FGJ.NonTypeVar(n1, ts), FGJ.NonTypeVar(n2, us)) if AUX_GT.isSubtypeByName(n1, n2, CT):
                     xs: FrozenList[FGJ.Type] = FrozenList([FGJ.TypeVar("x" + str(i)) for i, _ in enumerate(ts)])
@@ -70,7 +74,7 @@ def exhaustivelyFig1617(C_prime: set[FGJ_GT.sc], env: FGJ.Delta, CT: FGJ.ClassTa
                 #     newC_prime.add(FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ.TypeVar(n)))
                 #     changed = True
 
-                # 2 Arguments
+            # Rules with two arguments
             for constraint2 in C_prime:
                 if constraint == constraint2:
                     continue
@@ -128,8 +132,7 @@ def constraint_set_to_string(C: FGJ_GT.C | set[FGJ_GT.sc]) -> str:
 # END
 
 
-def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Type, FGJ.Type], FGJ.GenTypeAno]:
-    #                        -//-                          -> tuple[dict[FGJ_GT.TypeVarA, FGJ.Type], FGJ.GenTypeAno]:
+def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ_GT.TypeVarA, FGJ.Type], FGJ.GenTypeAno]:
     print("START:", constraint_set_to_string(C))
     for C_prime in AUX_GT.gen_C_prime(C):
         print("PRIME:", constraint_set_to_string(C_prime))
@@ -138,7 +141,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
         C_prime = AUX_GT.TypeVarToNonTypeVar(C_prime)
 
         # step 1
-        C_prime = exhaustivelyFig1617(C_prime, env, CT)
+        C_prime = reduceAndAdapt(C_prime, env, CT)
         print("after Step 1:\n", constraint_set_to_string(C_prime))
 
         # step 2
@@ -204,7 +207,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
         if noSolution:
             continue
 
-        C_prime = exhaustivelyFig1617(newC_prime, env, CT)
+        C_prime = reduceAndAdapt(newC_prime, env, CT)
 
         # to preserve an ordering
         oc_to_ord: dict[FGJ_GT.oc, list[list[FGJ_GT.EqualC]]] = dict()
@@ -222,7 +225,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
             oc_to_ord[new_oc] = [[FGJ_GT.EqualC(lowerC.t2, AUX.sub(cts.types, xs, ni))] for ni in ns]
             C_prime |= {new_oc}
 
-        C_prime = exhaustivelyFig1617(C_prime, env, CT)
+        C_prime = reduceAndAdapt(C_prime, env, CT)
         # remove the constraint previously added
         C_prime = C_prime.difference(removeLater)
 
@@ -265,8 +268,8 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ.Typ
 
             # step 4
             if changed:
-                # can we just return here? Should be fine
                 return Unify(C_prime2, env, CT)
+
             if not AUX_GT.is_solved_form(C_prime2):
                 raise Exception("NOT IN SOLVED FORM: " + constraint_set_to_string(C_prime2))
 
