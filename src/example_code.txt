@@ -9,6 +9,10 @@ class Pair <X extends Object <>, Y extends Object<>> extends Object<> {
     swap() {
         return new Pair(this.snd, this.fst);
     }
+
+    setboth(fst, snd) {
+        return new Pair(new Pair(fst, this.fst).fst, new Pair(snd, this.snd).fst);
+    }
 }
 
 new Object()

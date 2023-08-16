@@ -277,23 +277,29 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ_GT.
 
             # step 5
             # not sure if we can do both rules in one for-loop since sub may produce a case for elim
+            changes = True
+            while changes:
+                changes = False
+
+                newTempC2 = C_prime2.copy()
+                for constraint in C_prime2:
+                    match constraint:
+                        case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)):
+                            newTempC2.remove(constraint)
+                            newTempC2 = AUX_GT.subConstraint(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b), newTempC2)
+                            newTempC2.add(FGJ_GT.EqualC(FGJ_GT.TypeVarA(b), FGJ_GT.TypeVarA(a)))
+                            changes = True
+                            break
+
+                C_prime2 = newTempC2.copy()
+
             newTempC2 = C_prime2.copy()
-            for constraint in C_prime2:
-                match constraint:
-                    # is this exhaustively
-                    case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)):
-                        newTempC2.remove(constraint)
-                        newTempC2 = AUX_GT.subConstraint(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b), newTempC2)
-                        newTempC2.add(FGJ_GT.EqualC(FGJ_GT.TypeVarA(b), FGJ_GT.TypeVarA(a)))
-
-            C_prime2 = newTempC2.copy()
-
             for constraint in C_prime2:
                 match constraint:
                     case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)) if a == b:
                         newTempC2.remove(constraint)
 
-            C_prime2 = newTempC2
+            C_prime2 = newTempC2.copy()
 
             C_prime2 = AUX_GT.NonTypeVarToTypeVar(C_prime2, env)
 
