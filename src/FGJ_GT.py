@@ -5,11 +5,30 @@ from FGJ_GT_Type import FJType
 from FGJ_GT_Unify import Unify
 
 
-def TypeInference(Pi: FGJ.Pi, class_def: FGJ.ClassDef, CT: FGJ.ClassTable) -> FGJ.Pi:
-    ls, constraint = FJType(Pi, class_def, CT)  # constraint generation
-    sig, ysEps = Unify(constraint, dict(class_def.generic_type_annotation.items()), CT)  # constraint solving
-    # set or single? (set(MethodSign))
-    return Pi | {class_header_method_tuple: [FGJ.MethodSign({yi: ni for yi, ni in ysEps.items() if yi in [sig[ai] for ai in method_sign.types_of_arguments]}, [sig[ai] for ai in method_sign.types_of_arguments], sig[method_sign.return_type]) for method_sign in method_signs] for class_header_method_tuple, method_signs in ls.items()}
+class NoSolutionFound(Exception):
+    pass
+
+
+def TypeInference(Pi: FGJ.Pi, index: int, CT: FGJ.ClassTable) -> FGJ.Pi:
+    class_def_list = list(CT.values())
+    if index >= len(class_def_list):
+        return Pi
+    while index >= 0:
+        class_def = class_def_list[index]
+        ls, constraint = FJType(Pi, class_def, CT)  # constraint generation
+        unifys = [(sig, ysEps) for sig, ysEps in Unify(constraint, dict(class_def.generic_type_annotation.items()), CT)] # constraint solving
+        if unifys == []:
+            index -= 1
+            continue
+        for sig, ysEps in unifys:
+            try:
+                # set or single? (set(MethodSign))
+                new_pi = TypeInference(Pi | {class_header_method_tuple: [FGJ.MethodSign({yi: ni for yi, ni in ysEps.items() if yi in [sig[ai] for ai in method_sign.types_of_arguments]}, [sig[ai] for ai in method_sign.types_of_arguments], sig[method_sign.return_type]) for method_sign in method_signs] for class_header_method_tuple, method_signs in ls.items() if method_signs not in Pi.values()}, index + 1, CT)
+                return new_pi
+            except NoSolutionFound:
+                continue
+        raise Exception("LOL")
+    raise NoSolutionFound
 
 
 # to_string methods
@@ -57,7 +76,7 @@ program = read_from("src\example_code.txt")
 #         print("\t", FGJ.MethodSign(ysps, [o[a] for a in m.types_of_arguments], o[m.return_type]))
 
 
-d = TypeInference(dict(), program.CT["Pair"], program.CT)
+d = TypeInference(dict(), 0, program.CT)
 
 for (ch, m), mss in d.items():
     print(ch, m, ":")

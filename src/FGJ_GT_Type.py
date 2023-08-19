@@ -100,8 +100,13 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
             ass: FrozenList[FGJ.Type] = FrozenList([next(fresh_a) for _ in parameters])
             ca = FGJ.NonTypeVar(type1.name, ass)
             typed_fields = AUX.fields(ca, CT)
-            xs = list(CT[type1.name].generic_type_annotation.keys())
-            ns = list(CT[type1.name].generic_type_annotation.values())
+            print(list(typed_fields.values()))
+            if type1.name == "Object":
+                xs = []
+                ns = []
+            else:
+                xs = list(CT[type1.name].generic_type_annotation.keys())
+                ns = list(CT[type1.name].generic_type_annotation.values())
             sc = frozenset([FGJ_GT.SubTypeC(Ri, ti) for Ri, ti in zip(RiCi.keys(), typed_fields.values())]) | frozenset([FGJ_GT.SubTypeC(ai, AUX.sub(ass, xs, ni)) for ai, ni in zip(ass, ns)])
             for constraint in RiCi.values():
                 sc |= constraint

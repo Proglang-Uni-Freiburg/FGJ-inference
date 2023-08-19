@@ -83,7 +83,7 @@ def fields(t: FGJ.NonTypeVar, CT: FGJ.ClassTable) -> dict[str, FGJ.Type]:
             subted = sub(ts, xs, super_class)
             if type(subted) is not FGJ.NonTypeVar:
                 raise Exception("CANT GO HERE - BUT TYPECHECKING")
-            return subted_typed_fields | fields(subted, CT)
+            return fields(subted, CT) | subted_typed_fields
 
 
 def mtype(method_name: str, c: FGJ.NonTypeVar, CT: FGJ.ClassTable, PI: FGJ.Pi) -> Optional[FGJ.MethodSign]:

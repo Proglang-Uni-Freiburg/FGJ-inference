@@ -4,6 +4,7 @@ import FGJ_auxiliary_typing as AUX
 import FGJ_GT_auxiliary_functions as AUX_GT
 
 from frozenlist import FrozenList
+from typing import Generator, Any
 
 
 def reduceAndAdapt(C_prime: set[FGJ_GT.sc], env: FGJ.Delta, CT: FGJ.ClassTable) -> set[FGJ_GT.sc]:
@@ -132,17 +133,17 @@ def constraint_set_to_string(C: FGJ_GT.C | set[FGJ_GT.sc]) -> str:
 # END
 
 
-def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ_GT.TypeVarA, FGJ.Type], FGJ.GenTypeAno]:
-    print("START:", constraint_set_to_string(C))
+def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[dict[FGJ_GT.TypeVarA, FGJ.Type], FGJ.GenTypeAno], Any, None]:
+    # print("START:", constraint_set_to_string(C))
     for C_prime in AUX_GT.gen_C_prime(C):
-        print("PRIME:", constraint_set_to_string(C_prime))
+        # print("PRIME:", constraint_set_to_string(C_prime))
 
         # X -> X<>
         C_prime = AUX_GT.TypeVarToNonTypeVar(C_prime)
 
         # step 1
         C_prime = reduceAndAdapt(C_prime, env, CT)
-        print("after Step 1:\n", constraint_set_to_string(C_prime))
+        # print("after Step 1:\n", constraint_set_to_string(C_prime))
 
         # step 2
         noSolution = False
@@ -229,7 +230,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ_GT.
         # remove the constraint previously added
         C_prime = C_prime.difference(removeLater)
 
-        print("after Step 2:\n", constraint_set_to_string(C_prime))
+        # print("after Step 2:\n", constraint_set_to_string(C_prime))
 
         # step 3
         for C_prime2 in AUX_GT.gen_C_prime(C_prime, oc_to_ord):
@@ -264,16 +265,17 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ_GT.
             if noSolution:
                 continue
 
-            print("after Step 3:\n", constraint_set_to_string(C_prime2))
+            # print("after Step 3:\n", constraint_set_to_string(C_prime2))
 
             # step 4
             if changed:
-                return Unify(C_prime2, env, CT)
+                yield from Unify(C_prime2, env, CT)
+                return
 
             if not AUX_GT.is_solved_form(C_prime2):
                 raise Exception("NOT IN SOLVED FORM: " + constraint_set_to_string(C_prime2))
 
-            print("after Step 4:\n", constraint_set_to_string(C_prime2))
+            # print("after Step 4:\n", constraint_set_to_string(C_prime2))
 
             # step 5
             # not sure if we can do both rules in one for-loop since sub may produce a case for elim
@@ -303,7 +305,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ_GT.
 
             C_prime2 = AUX_GT.NonTypeVarToTypeVar(C_prime2, env)
 
-            print("after Step 5:\n", constraint_set_to_string(C_prime2))
+            # print("after Step 5:\n", constraint_set_to_string(C_prime2))
 
             # step 6
             C_equal: set[FGJ_GT.EqualC] = set()
@@ -323,16 +325,14 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> tuple[dict[FGJ_GT.
             # Z_fresh = FGJ.TypeVar(start)
             Zs_fresh = [FGJ.TypeVar(start + str(i)) for i, _ in enumerate(ass)]
             # why only X in C_sub? why not all T?
-            print("Eq:", constraint_set_to_string(C_equal))
-            print("Sub:", constraint_set_to_string(C_sub))
+            # print("Eq:", constraint_set_to_string(C_equal))
+            # print("Sub:", constraint_set_to_string(C_sub))
             o = {c.t1: AUX_GT.sub(Zs_fresh, ass, c.t2) for c in C_equal} | {c.t1: c.t2 for c in C_sub if type(c.t2) is FGJ.TypeVar} | {ai: zi for ai, zi in zip(ass, Zs_fresh)}
-            for k, v in o.items():
-                print(f"o[{k}] = {v}")
+            # for k, v in o.items():
+            #     # print(f"o[{k}] = {v}")
             # all c from C_sub?
             assert len(Zs_fresh) == len(ass)
             # if no arguments are given can new typevars be neccessary?
             # y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {Z_fresh: AUX_GT.sub(Zs_fresh, ass, c.t2) for c in C_sub if type(c.t2) if FGJ.NonTypeVar}
             y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {zi: AUX_GT.sub(Zs_fresh, ass, c.t2) for zi, c in zip(Zs_fresh, C_sub) if type(c.t2) is FGJ.NonTypeVar}
-            return o, y
-
-    raise Exception("NO SOLUTION FOUND")
+            yield o, y
