@@ -58,7 +58,7 @@ C<T> < a, a <* b, D<U> < b
 --------------------------
 -//- + C<T> < b
 
-match dont need delta
+match does not need delta
 
 expandLB - check if subtype possible
  - add constraint C<T><D<U> and mark

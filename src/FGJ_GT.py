@@ -11,9 +11,8 @@ def TypeInference(Pi: FGJ.Pi, class_def: FGJ.ClassDef, CT: FGJ.ClassTable) -> FG
     # set or single? (set(MethodSign))
     return Pi | {class_header_method_tuple: [FGJ.MethodSign({yi: ni for yi, ni in ysEps.items() if yi in [sig[ai] for ai in method_sign.types_of_arguments]}, [sig[ai] for ai in method_sign.types_of_arguments], sig[method_sign.return_type]) for method_sign in method_signs] for class_header_method_tuple, method_signs in ls.items()}
 
+
 # to_string methods
-
-
 def lambdas_to_string(ls: FGJ_GT.lambdas) -> str:
     return ", ".join(f"({ch}, {m}) -> [{', '.join(str(v) for v in value)}]" for (ch, m), value in ls.items())
 
