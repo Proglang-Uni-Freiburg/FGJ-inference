@@ -139,7 +139,6 @@ def genericSupertype(C: str, ts: FrozenList[FGJ.Type], D: str, env: FGJ.Delta, C
 
 
 # genericSuperType as List
-# not all are possible? Pair<X, Y> <= a0, a0 <= Object<>
 def genericSupertypeList(C: str, ts: FrozenList[FGJ.Type], D: str, env: FGJ.Delta, CT: FGJ.ClassTable) -> list[FGJ.Type]:
     """
     Returns a list of all classes N for C <: N <: D while substituting ts in every step

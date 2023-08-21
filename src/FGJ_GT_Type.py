@@ -100,7 +100,6 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
             ass: FrozenList[FGJ.Type] = FrozenList([next(fresh_a) for _ in parameters])
             ca = FGJ.NonTypeVar(type1.name, ass)
             typed_fields = AUX.fields(ca, CT)
-            print(list(typed_fields.values()))
             if type1.name == "Object":
                 xs = []
                 ns = []

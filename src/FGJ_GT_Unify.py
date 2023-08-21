@@ -7,6 +7,9 @@ from frozenlist import FrozenList
 from typing import Generator, Any
 
 
+z_fresh = AUX_GT.fresh("Z")
+
+
 def reduceAndAdapt(C_prime: set[FGJ_GT.sc], env: FGJ.Delta, CT: FGJ.ClassTable) -> set[FGJ_GT.sc]:
     """
     Step 1
@@ -323,7 +326,8 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
             # 'Z' is not allowed to occur already, do a check here or search for another
             start = "Z"
             # Z_fresh = FGJ.TypeVar(start)
-            Zs_fresh = [FGJ.TypeVar(start + str(i)) for i, _ in enumerate(ass)]
+            # Zs_fresh = [FGJ.TypeVar(start + str(i)) for i, _ in enumerate(ass)]
+            Zs_fresh = [next(z_fresh) for _ in ass]
             # why only X in C_sub? why not all T?
             # print("Eq:", constraint_set_to_string(C_equal))
             # print("Sub:", constraint_set_to_string(C_sub))

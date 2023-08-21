@@ -3,6 +3,7 @@ import FGJ_GT_AST as FGJ_GT
 
 from FGJ_GT_Type import FJType
 from FGJ_GT_Unify import Unify
+from frozendict import frozendict
 
 
 class NoSolutionFound(Exception):
@@ -16,7 +17,7 @@ def TypeInference(Pi: FGJ.Pi, index: int, CT: FGJ.ClassTable) -> FGJ.Pi:
     while index >= 0:
         class_def = class_def_list[index]
         ls, constraint = FJType(Pi, class_def, CT)  # constraint generation
-        unifys = [(sig, ysEps) for sig, ysEps in Unify(constraint, dict(class_def.generic_type_annotation.items()), CT)] # constraint solving
+        unifys = [(sig, ysEps) for sig, ysEps in Unify(constraint, dict(class_def.generic_type_annotation.items()), CT)]  # constraint solving
         if unifys == []:
             index -= 1
             continue
@@ -27,7 +28,7 @@ def TypeInference(Pi: FGJ.Pi, index: int, CT: FGJ.ClassTable) -> FGJ.Pi:
                 return new_pi
             except NoSolutionFound:
                 continue
-        raise Exception("LOL")
+        raise Exception("UNREACHABLE")  # ...
     raise NoSolutionFound
 
 
