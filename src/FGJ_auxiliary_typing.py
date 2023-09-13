@@ -6,7 +6,7 @@ from frozendict import frozendict
 from frozenlist import FrozenList
 
 
-def sub_single(T: FGJ.Type, X: FGJ.TypeVar, T_old: FGJ.Type) -> FGJ.Type:
+def substitute_typeVar(T: FGJ.Type, X: FGJ.TypeVar, T_old: FGJ.Type) -> FGJ.Type:
     """
     [T/X]Type(S,T,U,V) -> [T/X]TypeVar(X,Y,Z) or [T/X]NonTypeVar(N,P,Q)
     """
@@ -18,17 +18,17 @@ def sub_single(T: FGJ.Type, X: FGJ.TypeVar, T_old: FGJ.Type) -> FGJ.Type:
         case FGJ.TypeVar(_):
             return T_old
         case FGJ.NonTypeVar(name, types):
-            return FGJ.NonTypeVar(name, FrozenList([sub_single(T, X, t) for t in types]))
+            return FGJ.NonTypeVar(name, FrozenList([substitute_typeVar(T, X, t) for t in types]))
         case _:
             raise Exception(f"Arguments must be either TypeVar or NonTypeVar but is {type(T_old)}")
 
 
-def sub(Ts: FrozenList[FGJ.Type], Xs: list[FGJ.TypeVar], T_old: FGJ.Type) -> FGJ.Type:
+def substitute_typeVars(Ts: FrozenList[FGJ.Type], Xs: list[FGJ.TypeVar], T_old: FGJ.Type) -> FGJ.Type:
     """
     ['T/'X]Type(S,T,U,V) -> ['T/'X]TypeVar(X,Y,Z) or ['T/'X]NonTypeVar(N,P,Q)
     """
     for t, x in zip(Ts, Xs):
-        T_old = sub_single(t, x, T_old)
+        T_old = substitute_typeVar(t, x, T_old)
     return T_old
 
 
@@ -46,7 +46,7 @@ def is_subtype(t1: FGJ.Type, t2: FGJ.Type, Delta: FGJ.Delta, CT: FGJ.ClassTable)
             class_def = CT[t1_name]
             xs = list(class_def.generic_type_annotation.keys())
             n = class_def.superclass
-            return is_subtype(sub(t1s, xs, n), t2, Delta, CT)
+            return is_subtype(substitute_typeVars(t1s, xs, n), t2, Delta, CT)
         case _:
             return False
 
@@ -64,7 +64,7 @@ def is_well_formed(t: FGJ.Type, Delta: FGJ.Delta, CT: FGJ.ClassTable) -> bool:
             class_def = CT[name]
             mapped = zip(class_def.generic_type_annotation.values(), ts)
             xs = list(class_def.generic_type_annotation.keys())
-            are_types_subtypes = all(is_subtype(ti, sub(ts, xs, ni), Delta, CT) for (ni, ti) in mapped)
+            are_types_subtypes = all(is_subtype(ti, substitute_typeVars(ts, xs, ni), Delta, CT) for (ni, ti) in mapped)
             return are_types_well_formed and are_types_subtypes
         case _:
             raise Exception("Type must either be TypeVar or NonTypeVar but is Type")
@@ -78,9 +78,9 @@ def fields(t: FGJ.NonTypeVar, CT: FGJ.ClassTable) -> dict[str, FGJ.Type]:
             class_def = CT[name]
             typed_fields = class_def.typed_fields.items()
             xs = list(class_def.generic_type_annotation.keys())
-            subted_typed_fields = {field: sub(ts, xs, t) for field, t in typed_fields}
+            subted_typed_fields = {field: substitute_typeVars(ts, xs, t) for field, t in typed_fields}
             super_class = class_def.superclass
-            subted = sub(ts, xs, super_class)
+            subted = substitute_typeVars(ts, xs, super_class)
             if type(subted) is not FGJ.NonTypeVar:
                 raise Exception("CANT GO HERE - BUT TYPECHECKING")
             return fields(subted, CT) | subted_typed_fields
@@ -96,15 +96,15 @@ def mtype(method_name: str, c: FGJ.NonTypeVar, CT: FGJ.ClassTable, PI: FGJ.Pi) -
             method_signature = list(PI[(FGJ.ClassHeader(class_def.name, frozendict(gen_type_ano.items())), method_name)])[0] # Why Set? Get a random ano? ???
             xs = list(gen_type_ano.keys())
             # subted_gen_type_ano: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {sub(ts, xs, yi): sub(ts, xs, pi) for yi, pi in method_signature.gen_typ_ano.items()}
-            subted_gen_type_ano: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {yi: sub(ts, xs, pi) for yi, pi in method_signature.gen_typ_ano.items()}
-            subted_arguments = [sub(ts, xs, ui) for ui in method_signature.types_of_arguments]
-            subted_return_type = sub(ts, xs, method_signature.return_type)
+            subted_gen_type_ano: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {yi: substitute_typeVars(ts, xs, pi) for yi, pi in method_signature.gen_typ_ano.items()}
+            subted_arguments = [substitute_typeVars(ts, xs, ui) for ui in method_signature.types_of_arguments]
+            subted_return_type = substitute_typeVars(ts, xs, method_signature.return_type)
             return FGJ.MethodSign(subted_gen_type_ano, subted_arguments, subted_return_type)
 
         case FGJ.NonTypeVar(name, ts):
             class_def = CT[name]
             xs = list(class_def.generic_type_annotation.keys())
-            subted = sub(ts, xs, class_def.superclass)
+            subted = substitute_typeVars(ts, xs, class_def.superclass)
             if type(subted) is not FGJ.NonTypeVar:
                 raise Exception("CANT GO HERE - BUT TYPECHECKER")
             return mtype(method_name, subted, CT, PI)
@@ -123,10 +123,10 @@ def is_valid_method_override(method_name: str, n: FGJ.NonTypeVar, method_sign_lo
     us = method_sign_upper.types_of_arguments
     t0 = method_sign_lower.return_type
     u0 = method_sign_upper.return_type
-    ps_equals_qs = all([pi == sub(ys, zs, qi) for pi, qi in zip(ps, qs)])
-    ts_equals_us = all([pi == sub(ys, zs, qi) for pi, qi in zip(ts, us)])
+    ps_equals_qs = all([pi == substitute_typeVars(ys, zs, qi) for pi, qi in zip(ps, qs)])
+    ts_equals_us = all([pi == substitute_typeVars(ys, zs, qi) for pi, qi in zip(ts, us)])
     Delta = {yi: pi for yi, pi in zip(ysTV, ps)}
-    t0_sub_u0 = is_subtype(t0, sub(ys, zs, u0), Delta, CT)
+    t0_sub_u0 = is_subtype(t0, substitute_typeVars(ys, zs, u0), Delta, CT)
     return ps_equals_qs and ts_equals_us and t0_sub_u0
 
 

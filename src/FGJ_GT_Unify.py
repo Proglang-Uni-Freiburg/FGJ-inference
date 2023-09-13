@@ -7,7 +7,7 @@ from frozenlist import FrozenList
 from typing import Generator, Any
 
 
-z_fresh = AUX_GT.fresh("Z")
+z_fresh = AUX_GT.freshVar("Z")  # <--------------------------- Var vs VarA
 
 
 def reduceAndAdapt(C_prime: set[FGJ_GT.sc], env: FGJ.Delta, CT: FGJ.ClassTable) -> set[FGJ_GT.sc]:
@@ -22,27 +22,23 @@ def reduceAndAdapt(C_prime: set[FGJ_GT.sc], env: FGJ.Delta, CT: FGJ.ClassTable) 
     while changed:
         changed = False
         newC_prime = C_prime.copy()
+
+        # rules with one argument
         for constraint in C_prime:
-            # rules with one argument
             match constraint:
                 # adapt
-                case FGJ_GT.SubTypeC(FGJ.NonTypeVar(n1, ts), FGJ.NonTypeVar(n2, us)) if AUX_GT.isSubtypeByName(n1, n2, CT):
+                case FGJ_GT.SubTypeC(FGJ.NonTypeVar(n1, ts), FGJ.NonTypeVar(n2, us)) if AUX_GT.isSubtypeByName(n1, n2, env, CT):
+                    print("adapt", constraint)
                     xs: FrozenList[FGJ.Type] = FrozenList([FGJ.TypeVar("x" + str(i)) for i, _ in enumerate(ts)])
                     ns = AUX_GT.genericSupertype(n1, xs, n2, env, CT)
                     newC_prime.remove(constraint)
-                    subtedns = FrozenList([AUX.sub(ts, xs, ni) for ni in ns])
+                    subtedns = FrozenList([AUX.substitute_typeVars(ts, xs, ni) for ni in ns])
                     newC_prime.add(FGJ_GT.EqualC(FGJ.NonTypeVar(n2, subtedns), FGJ.NonTypeVar(n2, us)))
                     changed = True
 
-                # # is this implied by the example 8 or not?
-                # case FGJ_GT.SubTypeC(FGJ.TypeVar(n1), FGJ.NonTypeVar(n2, us)) if not isinstance(constraint.t1, FGJ_GT.TypeVarA) and AUX_GT.isSubtypeByName(env[FGJ.TypeVar(n1)].name, n2, CT):
-                #     ns = AUX_GT.genericSupertype(env[FGJ.TypeVar(n1)].name, env[FGJ.TypeVar(n1)].types, n2, CT)
-                #     newC_prime.remove(constraint)
-                #     newC_prime.add(FGJ_GT.EqualC(FGJ.NonTypeVar(n2, ns), FGJ.NonTypeVar(n2, us)))
-                #     changed = True
-
                 # reduce
                 case FGJ_GT.EqualC(FGJ.NonTypeVar(c, ts), FGJ.NonTypeVar(d, us)) if c == d:
+                    print("reduce", constraint)
                     newC_prime.remove(constraint)
                     for ti, ui in zip(ts, us):
                         newC_prime.add(FGJ_GT.EqualC(ti, ui))
@@ -52,72 +48,88 @@ def reduceAndAdapt(C_prime: set[FGJ_GT.sc], env: FGJ.Delta, CT: FGJ.ClassTable) 
                 case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)):
                     equals: list[FGJ_GT.SubTypeC] = AUX_GT.findCircle(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b), C_prime)
                     for sc in equals:
+                        print("equals", constraint)
                         newC_prime.remove(sc)
                         newC_prime.add(FGJ_GT.EqualC(sc.t1, sc.t2))
                         changed = True
 
                 # erase
                 case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)) if a == b:
+                    print("erase", constraint)
                     newC_prime.remove(constraint)
                     changed = True
 
-                # # X = X redundant
-                # case FGJ_GT.EqualC(FGJ.TypeVar(x), FGJ.TypeVar(z)) if x == z:
-                #     newC_prime.remove(constraint)
-                #     changed = True
-
                 # swap
                 case FGJ_GT.EqualC(FGJ.NonTypeVar(n, ts), FGJ_GT.TypeVarA(a)):
+                    print("swap", constraint)
                     newC_prime.remove(constraint)
                     newC_prime.add(FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(n, ts)))
                     changed = True
 
-                # # swap X = a -> a = X? redundant
-                # case FGJ_GT.EqualC(FGJ.TypeVar(n), FGJ_GT.TypeVarA(a)):
-                #     newC_prime.remove(constraint)
-                #     newC_prime.add(FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ.TypeVar(n)))
-                #     changed = True
+        if changed:
+            C_prime = newC_prime
+            continue
 
-            # Rules with two arguments
+        # Rules with two arguments
+        for constraint in C_prime:
+
+            if changed:
+                break
+
             for constraint2 in C_prime:
+
                 if constraint == constraint2:
                     continue
 
                 match constraint, constraint2:
 
-                    # match
-                    case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(c, _)), FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(d, _)) if a == b:
-                        if AUX_GT.isSubtypeByName(c, d, CT):
+                    # match & adopt
+                    case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(c, cs)), FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(d, _)):
+                        # match <
+                        if a == b and AUX_GT.isSubtypeByName(c, d, env, CT):
+                            print("match", constraint, constraint2)
                             newC_prime.remove(constraint2)
                             newC_prime.add(FGJ_GT.SubTypeC(constraint.t2, constraint2.t2))
                             changed = True
-                        elif AUX_GT.isSubtypeByName(d, c, CT):
+                            break
+                        # match >
+                        elif a == b and AUX_GT.isSubtypeByName(d, c, env, CT):
+                            print("match >", constraint, constraint2)
                             newC_prime.remove(constraint)
                             newC_prime.add(FGJ_GT.SubTypeC(constraint2.t2, constraint.t2))
                             changed = True
+                            break
+                        # adopt
+                        elif AUX_GT.isConnected(FGJ_GT.TypeVarA(b), FGJ_GT.TypeVarA(a), C_prime):
+                            new_constraint = FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(c, cs))
+                            if newC_prime.isdisjoint({new_constraint}):
+                                print("adopt", constraint, constraint2)
+                                newC_prime.add(new_constraint)
+                                changed = True
+                                break
 
-                    # match reverse (own)
-                    case FGJ_GT.SubTypeC(FGJ_GT.FGJ.NonTypeVar(c, _), FGJ_GT.TypeVarA(a)), FGJ_GT.SubTypeC(FGJ.NonTypeVar(d, _), FGJ_GT.TypeVarA(b)) if a == b:
-                        if AUX_GT.isSubtypeByName(c, d, CT):
+                    # match reverse and adopt reverse (own)
+                    case FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, cs), FGJ_GT.TypeVarA(a)), FGJ_GT.SubTypeC(FGJ.NonTypeVar(d, _), FGJ_GT.TypeVarA(b)):
+                        # match reverse < (own)
+                        if a == b and AUX_GT.isSubtypeByName(c, d, env, CT):
+                            print("match rev", constraint, constraint2)
                             newC_prime.remove(constraint)
                             newC_prime.add(FGJ_GT.SubTypeC(constraint.t1, constraint2.t1))
                             changed = True
-                        elif AUX_GT.isSubtypeByName(d, c, CT):
+                            break
+                        # match reverse > (own)
+                        elif a == b and AUX_GT.isSubtypeByName(d, c, env, CT):
+                            print("match rev >", constraint, constraint2)
                             newC_prime.remove(constraint2)
                             newC_prime.add(FGJ_GT.SubTypeC(constraint2.t1, constraint.t1))
                             changed = True
-
-                    # adopt
-                    case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(c, cs)), FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(d, _)) if AUX_GT.isConnected(FGJ_GT.TypeVarA(b), FGJ_GT.TypeVarA(a), C_prime):
-                        new_constraint = FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(c, cs))
-                        if newC_prime.isdisjoint({new_constraint}):
-                            newC_prime.add(new_constraint)
+                            break
+                        # adopt reverse (own)
+                        elif AUX_GT.isConnected(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b), C_prime):
+                            print("adopt rev", constraint, constraint2)
+                            newC_prime.add(FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, cs), FGJ_GT.TypeVarA(b)))
                             changed = True
-
-                    # adopt reverse (own)
-                    case FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, cs), FGJ_GT.TypeVarA(a)), FGJ_GT.SubTypeC(FGJ.NonTypeVar(d, _), FGJ_GT.TypeVarA(b)) if AUX_GT.isConnected(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b), C_prime):
-                        newC_prime.add(FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, cs), FGJ_GT.TypeVarA(b)))
-                        changed = True
+                            break
 
         C_prime = newC_prime
     return newC_prime
@@ -137,7 +149,7 @@ def constraint_set_to_string(C: FGJ_GT.C | set[FGJ_GT.sc]) -> str:
 
 
 def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[dict[FGJ_GT.TypeVarA, FGJ.Type], FGJ.GenTypeAno], Any, None]:
-    # print("START:", constraint_set_to_string(C))
+    print("START:", constraint_set_to_string(C))
     for C_prime in AUX_GT.gen_C_prime(C):
         # print("PRIME:", constraint_set_to_string(C_prime))
 
@@ -166,7 +178,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
                     break
 
                 # 1
-                case FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, _), FGJ.NonTypeVar(d, _)) if not AUX_GT.isSubtypeByName(c, d, CT):
+                case FGJ_GT.SubTypeC(FGJ.NonTypeVar(c, _), FGJ.NonTypeVar(d, _)) if not AUX_GT.isSubtypeByName(c, d, env, CT):
                     noSolution = True
                     break
 
@@ -199,7 +211,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
                     continue
 
                 match constraint, constraint2:
-                    case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(c, _)), FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(d, _)) if a == b and not AUX_GT.isSubtypeByName(c, d, CT) and not AUX_GT.isSubtypeByName(d, c, CT):
+                    case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(c, _)), FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(d, _)) if a == b and not AUX_GT.isSubtypeByName(c, d, env, CT) and not AUX_GT.isSubtypeByName(d, c, env, CT):
                         noSolution = True
                         break
 
@@ -225,8 +237,8 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
             xs = FrozenList(FGJ.TypeVar("x" + str(i)) for i, _ in enumerate(cts.types))
             ns = AUX_GT.genericSupertypeList(cts.name, xs, dts.name, env, CT)
             # no order -> different solutions
-            new_oc = frozenset(frozenset([FGJ_GT.EqualC(lowerC.t2, AUX.sub(cts.types, xs, ni))]) for ni in ns)
-            oc_to_ord[new_oc] = [[FGJ_GT.EqualC(lowerC.t2, AUX.sub(cts.types, xs, ni))] for ni in ns]
+            new_oc = frozenset(frozenset([FGJ_GT.EqualC(lowerC.t2, AUX.substitute_typeVars(cts.types, xs, ni))]) for ni in ns)
+            oc_to_ord[new_oc] = [[FGJ_GT.EqualC(lowerC.t2, AUX.substitute_typeVars(cts.types, xs, ni))] for ni in ns]
             C_prime |= {new_oc}
 
         C_prime = reduceAndAdapt(C_prime, env, CT)
@@ -324,19 +336,19 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
             ass: list[FGJ_GT.TypeVarA] = list({c.t1 for c in C_sub if type(c.t1) is FGJ_GT.TypeVarA})
 
             # 'Z' is not allowed to occur already, do a check here or search for another
-            start = "Z"
-            # Z_fresh = FGJ.TypeVar(start)
-            # Zs_fresh = [FGJ.TypeVar(start + str(i)) for i, _ in enumerate(ass)]
             Zs_fresh = [next(z_fresh) for _ in ass]
             # why only X in C_sub? why not all T?
-            # print("Eq:", constraint_set_to_string(C_equal))
-            # print("Sub:", constraint_set_to_string(C_sub))
-            o = {c.t1: AUX_GT.sub(Zs_fresh, ass, c.t2) for c in C_equal} | {c.t1: c.t2 for c in C_sub if type(c.t2) is FGJ.TypeVar} | {ai: zi for ai, zi in zip(ass, Zs_fresh)}
-            # for k, v in o.items():
-            #     # print(f"o[{k}] = {v}")
+            print("Eq:", constraint_set_to_string(C_equal))
+            print("Sub:", constraint_set_to_string(C_sub))
+            o = {c.t1: AUX_GT.substitute_typeVarAs(Zs_fresh, ass, c.t2) for c in C_equal} | {c.t1: c.t2 for c in C_sub if type(c.t2) is FGJ.TypeVar} | {ai: zi for ai, zi in zip(ass, Zs_fresh)}
+            for k, v in sorted(o.items(), key=lambda t: t[0].name):
+                print(f"o[{k}] = {v}")
             # all c from C_sub?
             assert len(Zs_fresh) == len(ass)
             # if no arguments are given can new typevars be neccessary?
             # y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {Z_fresh: AUX_GT.sub(Zs_fresh, ass, c.t2) for c in C_sub if type(c.t2) if FGJ.NonTypeVar}
-            y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {zi: AUX_GT.sub(Zs_fresh, ass, c.t2) for zi, c in zip(Zs_fresh, C_sub) if type(c.t2) is FGJ.NonTypeVar}
+            y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {o[c.t1]: AUX_GT.substitute_typeVarAs(Zs_fresh, ass, c.t2) for c in C_sub if type(c.t2) is FGJ.NonTypeVar}
+            print("y:")
+            for k, v in y.items():
+                print(f"{k} <= {v}")
             yield o, y

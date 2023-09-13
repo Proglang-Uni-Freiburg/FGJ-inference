@@ -7,6 +7,10 @@ from frozenlist import FrozenList
 from itertools import product
 
 
+class NoSolutionFound(Exception):
+    pass
+
+
 def fresh(name: str) -> Generator[FGJ_GT.TypeVarA, Any, None]:
     """
     Create an infinite amount of TypeVarA with different names.
@@ -15,6 +19,17 @@ def fresh(name: str) -> Generator[FGJ_GT.TypeVarA, Any, None]:
     count = 0
     while True:
         yield FGJ_GT.TypeVarA(name + str(count))
+        count += 1
+
+
+def freshVar(name: str) -> Generator[FGJ.TypeVar, Any, None]:
+    """
+    Create an infinite amount of TypeVar with different names.
+    -> name + 0, name + 1, ...
+    """
+    count = 0
+    while True:
+        yield FGJ.TypeVar(name + str(count))
         count += 1
 
 
@@ -35,7 +50,7 @@ def is_solved_form(C: set[FGJ_GT.sc]) -> bool:
                 pass
             case FGJ_GT.EqualC(FGJ_GT.TypeVarA(_), FGJ_GT.TypeVarA(_)):
                 pass
-            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(_)) if a not in lst and not occoursIn(FGJ_GT.TypeVarA(a), constraint.t2):
+            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(_)) if a not in lst:
                 lst.append(a)
             case FGJ_GT.EqualC(FGJ_GT.TypeVarA(a), FGJ.NonTypeVar(_)) if a not in lst and not occoursIn(FGJ_GT.TypeVarA(a), constraint.t2):
                 lst.append(a)
@@ -72,7 +87,7 @@ def gen_C_prime(C: FGJ_GT.C, oc_to_ord: Optional[dict[FGJ_GT.oc, list[list[FGJ_G
         yield out
 
 
-def subSingle(t: FGJ.Type, a: FGJ_GT.TypeVarA, t_old: FGJ.Type) -> FGJ.Type:
+def substitue_typeVarA(t: FGJ.Type, a: FGJ_GT.TypeVarA, t_old: FGJ.Type) -> FGJ.Type:
     """
     [T/a]T'
     """
@@ -80,17 +95,17 @@ def subSingle(t: FGJ.Type, a: FGJ_GT.TypeVarA, t_old: FGJ.Type) -> FGJ.Type:
         case FGJ_GT.TypeVarA(a.name):
             return t
         case FGJ.NonTypeVar(n, ts):
-            return FGJ.NonTypeVar(n, FrozenList([subSingle(t, a, ti) for ti in ts]))
+            return FGJ.NonTypeVar(n, FrozenList([substitue_typeVarA(t, a, ti) for ti in ts]))
         case _:
             return t_old
 
 
-def sub(ys: list[FGJ.TypeVar], ass: list[FGJ_GT.TypeVarA], t: FGJ.Type) -> FGJ.Type:
+def substitute_typeVarAs(ys: list[FGJ.TypeVar], ass: list[FGJ_GT.TypeVarA], t: FGJ.Type) -> FGJ.Type:
     """
     [Ys/as]T
     """
     for yi, ai in zip(ys, ass):
-        t = subSingle(yi, ai, t)
+        t = substitue_typeVarA(yi, ai, t)
     return t
 
 
@@ -102,9 +117,9 @@ def subConstraint(t: FGJ.Type, a: FGJ_GT.TypeVarA, C: set[FGJ_GT.sc]) -> set[FGJ
     for constraint in C:
         match constraint:
             case FGJ_GT.EqualC(t1, t2):
-                newC.add(FGJ_GT.EqualC(subSingle(t, a, t1), subSingle(t, a, t2)))
+                newC.add(FGJ_GT.EqualC(substitue_typeVarA(t, a, t1), substitue_typeVarA(t, a, t2)))
             case FGJ_GT.SubTypeC(t1, t2):
-                newC.add(FGJ_GT.SubTypeC(subSingle(t, a, t1), subSingle(t, a, t2)))
+                newC.add(FGJ_GT.SubTypeC(substitue_typeVarA(t, a, t1), substitue_typeVarA(t, a, t2)))
     return newC
 
 
@@ -127,6 +142,8 @@ def genericSupertype(C: str, ts: FrozenList[FGJ.Type], D: str, env: FGJ.Delta, C
     """
     if C == D:
         return ts
+    if D != "Object" and D not in CT:
+        return genericSupertype(C, ts, env[FGJ.TypeVar(D)].name, env, CT)
     elif C not in CT:
         return genericSupertype(env[FGJ.TypeVar(C)].name, ts, D, env, CT)
     else:
@@ -135,7 +152,7 @@ def genericSupertype(C: str, ts: FrozenList[FGJ.Type], D: str, env: FGJ.Delta, C
         superclass = class_def.superclass
         Cprime = superclass.name
         ms = superclass.types
-        return genericSupertype(Cprime, FrozenList([AUX.sub(ts, ys, m) for m in ms]), D, env, CT)
+        return genericSupertype(Cprime, FrozenList([AUX.substitute_typeVars(ts, ys, m) for m in ms]), D, env, CT)
 
 
 # genericSuperType as List
@@ -153,11 +170,11 @@ def genericSupertypeList(C: str, ts: FrozenList[FGJ.Type], D: str, env: FGJ.Delt
         superclass = class_def.superclass
         Cprime = superclass.name
         ms = superclass.types
-        tsPrime = FrozenList([AUX.sub(ts, ys, m) for m in ms])
+        tsPrime = FrozenList([AUX.substitute_typeVars(ts, ys, m) for m in ms])
         return [FGJ.NonTypeVar(C, ts)] + genericSupertypeList(Cprime, tsPrime, D, env, CT)
 
 
-def isSubtypeByName(C: str, D: str, CT: FGJ.ClassTable) -> bool:
+def isSubtypeByName(C: str, D: str, env: FGJ.Delta, CT: FGJ.ClassTable) -> bool:
     """
     Checks if C is subrelated to D only by name
     """
@@ -167,7 +184,11 @@ def isSubtypeByName(C: str, D: str, CT: FGJ.ClassTable) -> bool:
         return False
     if C == D:
         return True
-    return isSubtypeByName(CT[C].superclass.name, D, CT)
+    if D not in CT:
+        return isSubtypeByName(C, env[FGJ.TypeVar(D)].name, env, CT)
+    if C not in CT:
+        return isSubtypeByName(env[FGJ.TypeVar(C)].name, D, env, CT)
+    return isSubtypeByName(CT[C].superclass.name, D, env, CT)
 
 
 def findCircle(start: FGJ_GT.TypeVarA, a: FGJ_GT.TypeVarA, b: FGJ_GT.TypeVarA, C: FGJ_GT.C) -> list[FGJ_GT.SubTypeC]:
@@ -194,7 +215,7 @@ def isConnected(a: FGJ_GT.TypeVarA, b: FGJ_GT.TypeVarA, C: FGJ_GT.C) -> bool:
         return True
     for constraint in C:
         match constraint:
-            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(aPrime), FGJ_GT.TypeVarA(c)) if a == FGJ_GT.TypeVarA(aPrime):
+            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(aPrime), FGJ_GT.TypeVarA(c)) if a == FGJ_GT.TypeVarA(aPrime) and constraint.t1 != constraint.t2:
                 if isConnected(FGJ_GT.TypeVarA(c), b, C):
                     return True
     return False
@@ -256,3 +277,32 @@ def NonTypeVarToTypeVar(C: set[FGJ_GT.sc], env: FGJ.Delta) -> set[FGJ_GT.sc]:
             case FGJ_GT.SubTypeC(t1, t2):
                 newC_prime2.add(FGJ_GT.SubTypeC(NonTypeVarToTypeVar_single(t1, env), NonTypeVarToTypeVar_single(t2, env)))
     return newC_prime2
+
+
+def getTypeSigOf(method_sign: FGJ.MethodSign, ysEps: dict[FGJ.TypeVar, FGJ.NonTypeVar], sig: dict[FGJ_GT.TypeVarA, FGJ.TypeVar], env: dict[FGJ.TypeVar, FGJ.NonTypeVar]) -> dict[FGJ.TypeVar, FGJ.NonTypeVar]:
+    set_of_typevars = allTypesIn(sig[method_sign.return_type])
+    for arg in method_sign.types_of_arguments:
+        set_of_typevars |= allTypesIn(sig[arg])
+    changing = True
+    while changing:
+        changing = False
+        for typevarA in set_of_typevars.copy():
+            upperB = (ysEps | env)[typevarA]
+            allTypesInSet = allTypesIn(upperB)
+            if not allTypesInSet.issubset(set_of_typevars):
+                set_of_typevars |= allTypesIn(upperB)
+                changing = True
+    return {tvA: (ysEps | env)[tvA] for tvA in set_of_typevars}
+
+
+def allTypesIn(type: FGJ.Type) -> set[FGJ.TypeVar]:
+    match type:
+        case FGJ.TypeVar(_):
+            return {type}
+        case FGJ.NonTypeVar(_, types):
+            out = set()
+            for t in types:
+                out |= allTypesIn(t)
+            return out
+        case _:
+            return set()

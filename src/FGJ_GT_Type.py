@@ -56,18 +56,18 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
                 a1s: FrozenList[FGJ.Type] = FrozenList([next(fresh_a) for _ in class_def.generic_type_annotation.values()])
                 xs = list(class_def.generic_type_annotation.keys())
                 c_new: FGJ_GT.C = frozenset([FGJ_GT.SubTypeC(Re, FGJ.NonTypeVar(class_def.name, a1s)),
-                                             FGJ_GT.EqualC(a, AUX.sub(a1s, xs, class_def.typed_fields[name])),
+                                             FGJ_GT.EqualC(a, AUX.substitute_typeVars(a1s, xs, class_def.typed_fields[name])),
                                              ])
                 for ai, ni in zip(a1s, class_def.generic_type_annotation.values()):
-                    c_new |= frozenset([FGJ_GT.SubTypeC(ai, AUX.sub(a1s, xs, ni))])
+                    c_new |= frozenset([FGJ_GT.SubTypeC(ai, AUX.substitute_typeVars(a1s, xs, ni))])
                 oc |= frozenset([c_new])
             return a, Cr | frozenset([oc])
 
         case FGJ.MethodLookup(e0, _, name, parameters):
             Re, Cr = TypeExpr(teta, e0, CT)
-            RiCi = dict(TypeExpr(teta, ei, CT) for ei in parameters)
-            Ri = RiCi.keys()
-            Ci = set(RiCi.values())
+            RiCi = [TypeExpr(teta, ei, CT) for ei in parameters]
+            Ri = map(lambda t: t[0], RiCi)
+            Ci = set(map(lambda t: t[1], RiCi))
             a = next(fresh_a)
             oc: FGJ_GT.oc = frozenset()
             for elem in Pi.items():
@@ -85,10 +85,10 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
                         ass1: FrozenList[FGJ.Type] = FrozenList([next(fresh_a) for _ in class_header.bounded_types])
                         bs: FrozenList[FGJ.Type] = FrozenList([next(fresh_b) for _ in class_header.bounded_types])
                         oc |= frozenset([frozenset([FGJ_GT.SubTypeC(Re, FGJ.NonTypeVar(class_header.class_name, ass1))]) |
-                                         frozenset([FGJ_GT.EqualC(a, AUX.sub(bs, ys, AUX.sub(ass1, xs, t)))]) |
-                                         frozenset([FGJ_GT.SubTypeC(Ri, AUX.sub(bs, ys, AUX.sub(ass1, xs, ti))) for Ri, ti in zip(Ri, ts)]) |
-                                         frozenset([FGJ_GT.SubTypeC(bi, AUX.sub(bs, ys, AUX.sub(ass1, xs, pi))) for bi, pi in zip(bs, ps)]) |
-                                         frozenset([FGJ_GT.SubTypeC(ai, AUX.sub(ass1, xs, ni)) for ai, ni in zip(ass1, ns)])
+                                         frozenset([FGJ_GT.EqualC(a, AUX.substitute_typeVars(bs, ys, AUX.substitute_typeVars(ass1, xs, t)))]) |
+                                         frozenset([FGJ_GT.SubTypeC(Ri, AUX.substitute_typeVars(bs, ys, AUX.substitute_typeVars(ass1, xs, ti))) for Ri, ti in zip(Ri, ts)]) |
+                                         frozenset([FGJ_GT.SubTypeC(bi, AUX.substitute_typeVars(bs, ys, AUX.substitute_typeVars(ass1, xs, pi))) for bi, pi in zip(bs, ps)]) |
+                                         frozenset([FGJ_GT.SubTypeC(ai, AUX.substitute_typeVars(ass1, xs, ni)) for ai, ni in zip(ass1, ns)])
                                          ])
             c_ret = Cr | frozenset([oc])
             for ci in Ci:
@@ -96,7 +96,7 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
             return a, c_ret
 
         case FGJ.NewClass(type1, parameters):
-            RiCi = dict(TypeExpr(teta, expr, CT) for expr in parameters)
+            RiCi = [TypeExpr(teta, expr, CT) for expr in parameters]
             ass: FrozenList[FGJ.Type] = FrozenList([next(fresh_a) for _ in parameters])
             ca = FGJ.NonTypeVar(type1.name, ass)
             typed_fields = AUX.fields(ca, CT)
@@ -106,8 +106,8 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
             else:
                 xs = list(CT[type1.name].generic_type_annotation.keys())
                 ns = list(CT[type1.name].generic_type_annotation.values())
-            sc = frozenset([FGJ_GT.SubTypeC(Ri, ti) for Ri, ti in zip(RiCi.keys(), typed_fields.values())]) | frozenset([FGJ_GT.SubTypeC(ai, AUX.sub(ass, xs, ni)) for ai, ni in zip(ass, ns)])
-            for constraint in RiCi.values():
+            sc = frozenset([FGJ_GT.SubTypeC(Ri, ti) for Ri, ti in zip(map(lambda t: t[0], RiCi), typed_fields.values())]) | frozenset([FGJ_GT.SubTypeC(ai, AUX.substitute_typeVars(ass, xs, ni)) for ai, ni in zip(ass, ns)])
+            for constraint in map(lambda t: t[1], RiCi):
                 sc |= constraint
             return ca, sc
 

@@ -1,17 +1,18 @@
-class Pair <X extends Object <>, Y extends Object<>> extends Object<> {
-    X fst;
-    Y snd;
-
-    setsnd(snd) {
-        return new Pair(this.fst, snd);
+class Int<> extends Object<> {
+    mult(num) {
+        return num;
     }
 }
 
-class Triple<X extends Object<>, Y extends Object<>, Z extends Object<>> extends Pair<X, Y> {
-    Z trd;
 
-    setsnd(snd) {
-        return new Pair(this.fst, snd);
+class Pair<X extends Object<>, Y extends Object<>> extends Object<> {
+    X fst;
+    Y snd;
+}
+
+class MultPair<> extends Object<> {
+    m(p) {
+        return p.mult(p);
     }
 }
 
