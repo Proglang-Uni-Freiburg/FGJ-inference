@@ -109,7 +109,7 @@ def substitute_typeVarAs(ys: list[FGJ.TypeVar], ass: list[FGJ_GT.TypeVarA], t: F
     return t
 
 
-def subConstraint(t: FGJ.Type, a: FGJ_GT.TypeVarA, C: set[FGJ_GT.sc]) -> set[FGJ_GT.sc]:
+def substConstraint(t: FGJ.Type, a: FGJ_GT.TypeVarA, C: set[FGJ_GT.sc]) -> set[FGJ_GT.sc]:
     """
     [T/a]C
     """
@@ -279,7 +279,7 @@ def NonTypeVarToTypeVar(C: set[FGJ_GT.sc], env: FGJ.Delta) -> set[FGJ_GT.sc]:
     return newC_prime2
 
 
-def getTypeSigOf(method_sign: FGJ.MethodSign, ysEps: dict[FGJ.TypeVar, FGJ.NonTypeVar], sig: dict[FGJ_GT.TypeVarA, FGJ.TypeVar], env: dict[FGJ.TypeVar, FGJ.NonTypeVar]) -> dict[FGJ.TypeVar, FGJ.NonTypeVar]:
+def getTypeSigOf(method_sign: FGJ.MethodSign, ysEps: dict[FGJ.TypeVar, FGJ.NonTypeVar], sig: dict[FGJ_GT.TypeVarA, FGJ.TypeVar]) -> dict[FGJ.TypeVar, FGJ.NonTypeVar]:
     set_of_typevars = allTypesIn(sig[method_sign.return_type])
     for arg in method_sign.types_of_arguments:
         set_of_typevars |= allTypesIn(sig[arg])
@@ -287,12 +287,12 @@ def getTypeSigOf(method_sign: FGJ.MethodSign, ysEps: dict[FGJ.TypeVar, FGJ.NonTy
     while changing:
         changing = False
         for typevarA in set_of_typevars.copy():
-            upperB = (ysEps | env)[typevarA]
+            upperB = ysEps[typevarA]
             allTypesInSet = allTypesIn(upperB)
             if not allTypesInSet.issubset(set_of_typevars):
                 set_of_typevars |= allTypesIn(upperB)
                 changing = True
-    return {tvA: (ysEps | env)[tvA] for tvA in set_of_typevars}
+    return {tvA: ysEps[tvA] for tvA in set_of_typevars}
 
 
 def allTypesIn(type: FGJ.Type) -> set[FGJ.TypeVar]:

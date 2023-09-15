@@ -12,7 +12,7 @@ class Pair<X extends Object<>, Y extends Object<>> extends Object<> {
 
 class MultPair<> extends Object<> {
     m(p) {
-        return p.mult(p);
+        return p.fst.mult(p.snd);
     }
 }
 

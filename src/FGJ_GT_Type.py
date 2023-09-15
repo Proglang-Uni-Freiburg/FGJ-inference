@@ -83,7 +83,7 @@ def TypeExpr(teta: FGJ_GT.Teta, expr: FGJ.Expression, CT: FGJ.ClassTable) -> tup
                         ts = method_sign.types_of_arguments
                         t = method_sign.return_type
                         ass1: FrozenList[FGJ.Type] = FrozenList([next(fresh_a) for _ in class_header.bounded_types])
-                        bs: FrozenList[FGJ.Type] = FrozenList([next(fresh_b) for _ in class_header.bounded_types])
+                        bs: FrozenList[FGJ.Type] = FrozenList([next(fresh_b) for _ in method_sign.gen_typ_ano])
                         oc |= frozenset([frozenset([FGJ_GT.SubTypeC(Re, FGJ.NonTypeVar(class_header.class_name, ass1))]) |
                                          frozenset([FGJ_GT.EqualC(a, AUX.substitute_typeVars(bs, ys, AUX.substitute_typeVars(ass1, xs, t)))]) |
                                          frozenset([FGJ_GT.SubTypeC(Ri, AUX.substitute_typeVars(bs, ys, AUX.substitute_typeVars(ass1, xs, ti))) for Ri, ti in zip(Ri, ts)]) |

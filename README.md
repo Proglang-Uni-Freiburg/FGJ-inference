@@ -68,3 +68,15 @@ expandLB - check if subtype possible
 Unify return o, ysEps
 
 what is ysEps - all possible ys with their bound?
+
+------------
+
+Syntax
+
+AUX functions?
+
+Constraint Generation -> Implementation details
+
+Constraint Solving -> Implementation details
+
+Ausblick: Nondeterm. -> Typechecker

@@ -102,6 +102,8 @@ def reduceAndAdapt(C_prime: set[FGJ_GT.sc], env: FGJ.Delta, CT: FGJ.ClassTable) 
                         # adopt
                         elif AUX_GT.isConnected(FGJ_GT.TypeVarA(b), FGJ_GT.TypeVarA(a), C_prime):
                             new_constraint = FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b), FGJ.NonTypeVar(c, cs))
+                            if new_constraint.t2.name == "Object":
+                                continue
                             if newC_prime.isdisjoint({new_constraint}):
                                 print("adopt", constraint, constraint2)
                                 newC_prime.add(new_constraint)
@@ -268,7 +270,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
                                 break
                             temp_C2 = C_prime2.copy()
                             temp_C2.remove(constraint)
-                            newTempC2 = AUX_GT.subConstraint(t, FGJ_GT.TypeVarA(a), temp_C2)
+                            newTempC2 = AUX_GT.substConstraint(t, FGJ_GT.TypeVarA(a), temp_C2)
                             if newTempC2.difference(temp_C2):
                                 newTempC2.add(constraint)
                                 C_prime2 = newTempC2
@@ -303,7 +305,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
                     match constraint:
                         case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b)):
                             newTempC2.remove(constraint)
-                            newTempC2 = AUX_GT.subConstraint(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b), newTempC2)
+                            newTempC2 = AUX_GT.substConstraint(FGJ_GT.TypeVarA(a), FGJ_GT.TypeVarA(b), newTempC2)
                             newTempC2.add(FGJ_GT.EqualC(FGJ_GT.TypeVarA(b), FGJ_GT.TypeVarA(a)))
                             changes = True
                             break
