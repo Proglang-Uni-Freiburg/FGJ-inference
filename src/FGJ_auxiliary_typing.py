@@ -51,6 +51,7 @@ def is_subtype(t1: FGJ.Type, t2: FGJ.Type, Delta: FGJ.Delta, CT: FGJ.ClassTable)
             return False
 
 
+# only used in typing (type check)
 def is_well_formed(t: FGJ.Type, Delta: FGJ.Delta, CT: FGJ.ClassTable) -> bool:
     match t:
         case FGJ.NonTypeVar("Object", _):
@@ -110,6 +111,7 @@ def mtype(method_name: str, c: FGJ.NonTypeVar, CT: FGJ.ClassTable, PI: FGJ.Pi) -
             return mtype(method_name, subted, CT, PI)
 
 
+# only used in typing (type check)
 def is_valid_method_override(method_name: str, n: FGJ.NonTypeVar, method_sign_lower: FGJ.MethodSign, CT: FGJ.ClassTable, PI: FGJ.Pi) -> bool:
     method_sign_upper = mtype(method_name, n, CT, PI)
     if not method_sign_upper:
@@ -130,6 +132,7 @@ def is_valid_method_override(method_name: str, n: FGJ.NonTypeVar, method_sign_lo
     return ps_equals_qs and ts_equals_us and t0_sub_u0
 
 
+# only used in typing (type check)
 def bound(n: FGJ.Type, Delta: FGJ.Delta) -> FGJ.NonTypeVar:
     match n:
         case FGJ.TypeVar(_):
@@ -140,6 +143,7 @@ def bound(n: FGJ.Type, Delta: FGJ.Delta) -> FGJ.NonTypeVar:
             raise Exception("CANT GO HERE - BUT TYPECHECKER")
 
 
+# unused
 def is_valid_downcast(c1: FGJ.NonTypeVar, c2: FGJ.NonTypeVar, CT: FGJ.ClassTable) -> bool:
     match c1, c2:
         case FGJ.NonTypeVar("Object", _), FGJ.NonTypeVar("Object", _):

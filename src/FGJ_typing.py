@@ -26,13 +26,13 @@ def typing_expression(expr: FGJ.Expression, Pi: FGJ.Pi, Delta: FGJ.Delta, Env: F
             if not all(Aux.is_well_formed(vi, Delta, CT) for vi in vs):
                 raise Exception(f"VS: {vs} is not well typed")
             for vi, pi in zip(vs, ps):
-                if not Aux.is_subtype(vi, Aux.substitute_typeVars(vs, ys, pi), Delta, CT):
+                if not Aux.is_subtype(vi, Aux.sub(vs, ys, pi), Delta, CT):
                     raise Exception(f"Vi: {vi} is not suptype of pi: {pi}")
             for expression, ui in zip(es, us):
                 type_of_expr = typing_expression(expression, Pi, Delta, Env, CT)
-                if not Aux.is_subtype(type_of_expr, Aux.substitute_typeVars(vs, ys, ui), Delta, CT):
+                if not Aux.is_subtype(type_of_expr, Aux.sub(vs, ys, ui), Delta, CT):
                     raise Exception(f"Argument {expression} is not subtype of {ui}")
-            return Aux.substitute_typeVars(vs, ys, u)
+            return Aux.sub(vs, ys, u)
 
         case FGJ.NewClass(type, parameters):
             n: FGJ.NonTypeVar = ...  # asumes some us for N = C<us> (C == type.name)

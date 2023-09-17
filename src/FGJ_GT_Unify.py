@@ -7,7 +7,7 @@ from frozenlist import FrozenList
 from typing import Generator, Any
 
 
-z_fresh = AUX_GT.freshVar("Z")  # <--------------------------- Var vs VarA
+z_fresh = AUX_GT.freshVar("Z")
 
 
 def reduceAndAdapt(C_prime: set[FGJ_GT.sc], env: FGJ.Delta, CT: FGJ.ClassTable) -> set[FGJ_GT.sc]:

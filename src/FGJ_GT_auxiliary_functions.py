@@ -279,6 +279,7 @@ def NonTypeVarToTypeVar(C: set[FGJ_GT.sc], env: FGJ.Delta) -> set[FGJ_GT.sc]:
     return newC_prime2
 
 
+# only used in FGJ_GT (FGJ_GT is a beta version)
 def getTypeSigOf(method_sign: FGJ.MethodSign, ysEps: dict[FGJ.TypeVar, FGJ.NonTypeVar], sig: dict[FGJ_GT.TypeVarA, FGJ.TypeVar]) -> dict[FGJ.TypeVar, FGJ.NonTypeVar]:
     set_of_typevars = allTypesIn(sig[method_sign.return_type])
     for arg in method_sign.types_of_arguments:
