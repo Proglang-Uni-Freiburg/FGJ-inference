@@ -286,13 +286,15 @@ def getTypeSigOf(method_sign: FGJ.MethodSign, ysEps: dict[FGJ.TypeVar, FGJ.NonTy
     changing = True
     while changing:
         changing = False
-        for typevarA in set_of_typevars.copy():
-            upperB = ysEps[typevarA]
+        for typevar in set_of_typevars.copy():
+            if typevar not in ysEps:
+                continue
+            upperB = ysEps[typevar]
             allTypesInSet = allTypesIn(upperB)
             if not allTypesInSet.issubset(set_of_typevars):
                 set_of_typevars |= allTypesIn(upperB)
                 changing = True
-    return {tvA: ysEps[tvA] for tvA in set_of_typevars}
+    return {tv: ysEps[tv] for tv in set_of_typevars if tv in ysEps}
 
 
 def allTypesIn(type: FGJ.Type) -> set[FGJ.TypeVar]:
