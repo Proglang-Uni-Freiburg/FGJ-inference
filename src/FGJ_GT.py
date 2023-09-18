@@ -54,7 +54,7 @@ def constraint_set_to_string(C: FGJ_GT.C) -> str:
 from FGJ_run import read_from
 
 
-program = read_from("src\example_code.txt")
+program = read_from("src\example_code.featherweight.java")
 # print(program.CT)
 
 # print(program.CT)

@@ -18,6 +18,10 @@ class MultPair<> extends Object<> {
     mm(p, q) {
         return new Pair(p.fst, q.snd);
     }
+
+    mmm(p) {
+        return p.mult(p);
+    }
 }
 
 new Object()

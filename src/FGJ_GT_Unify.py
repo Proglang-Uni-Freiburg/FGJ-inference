@@ -174,7 +174,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
 
             match constraint:
                 # 1 Argument
-                # Own C<Ts> = D<Us> -> No solution
+                # Own C<Ts> = D<Us> -> No solution -- is this possible? should not
                 case FGJ_GT.EqualC(FGJ.NonTypeVar(c, _), FGJ.NonTypeVar(d, _)) if d != c:
                     noSolution = True
                     break

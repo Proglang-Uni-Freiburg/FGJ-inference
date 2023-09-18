@@ -1,6 +1,7 @@
 import FGJ_AST as FGJ
 
 from FGJ_parser import fgj_parse
+from FGJ_GT import TypeInference
 
 import argparse
 import sys
@@ -18,6 +19,13 @@ def run(file_path: str, out_file_path: str, to_stdout: bool):
     else:
         with open(out_file_path, "w") as file:
             file.write(str(program))
+    print()
+    d = TypeInference(dict(), 0, program.CT)
+
+    for (ch, m), mss in d.items():
+        print(ch, m, ":")
+        for ms in mss:
+            print(ms)
 
 
 if __name__ == "__main__":
