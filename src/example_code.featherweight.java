@@ -1,27 +1,27 @@
 class Int<> extends Object<> {
-    mult(num) {
-        return num;
+    id(x) {
+        return x;
     }
 }
 
+class SomeMethods<> extends Object<> {
+    idd(x) {
+        return x.id(x);
+    }
+}
 
-class Pair<X extends Object<>, Y extends Object<>> extends Object<> {
+class Pair<X extends Int<>, Y extends Int<>> extends SomeMethods<> {
     X fst;
     Y snd;
-}
 
-class MultPair<> extends Object<> {
-    m(p) {
-        return p.fst.mult(p.snd);
+    setfst(newfst) {
+        return new Pair(newfst, this.snd);
     }
 
-    mm(p, q) {
-        return new Pair(p.fst, q.snd);
-    }
-
-    mmm(p) {
-        return p.mult(p);
+    setboth(newfst, newsnd) {
+        return new Pair(this.setfst(newfst).fst, this.idd(newsnd.id(newsnd)));
     }
 }
 
 new Object()
+

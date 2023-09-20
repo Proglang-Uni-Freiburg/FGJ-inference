@@ -79,3 +79,7 @@ Constraint Generation -> Implementation details
 Constraint Solving -> Implementation details
 
 Ausblick: Nondeterm. -> Typechecker
+
+Beispiele: Wie funktionierts? + output beschreiben
+
+Nicht determinismus -> FJType how -> Type checker

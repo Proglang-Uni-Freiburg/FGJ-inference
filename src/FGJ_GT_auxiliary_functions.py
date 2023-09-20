@@ -309,3 +309,11 @@ def allTypesIn(type: FGJ.Type) -> set[FGJ.TypeVar]:
             return out
         case _:
             return set()
+
+
+def find_highest_b(b: str, C: set[FGJ_GT.sc]):
+    for constraint in C:
+        match constraint:
+            case FGJ_GT.SubTypeC(FGJ_GT.TypeVarA(b1), FGJ_GT.TypeVarA(c)) if b == b1:
+                return find_highest_b(c, C)
+    return b
