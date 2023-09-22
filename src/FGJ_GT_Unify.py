@@ -153,7 +153,7 @@ def constraint_set_to_string(C: FGJ_GT.C | set[FGJ_GT.sc]) -> str:
 
 
 def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[dict[FGJ_GT.TypeVarA, FGJ.Type], FGJ.GenTypeAno], Any, None]:
-    print("START:", constraint_set_to_string(C))
+    # print("START:", constraint_set_to_string(C))
     for C_prime in AUX_GT.gen_C_prime(C):
         # print("PRIME:", constraint_set_to_string(C_prime))
 
@@ -403,17 +403,23 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
             # 'Z' is not allowed to occur already, do a check here or search for another
             Zs_fresh = [next(z_fresh) for _ in ass]
             # why only X in C_sub? why not all T?
-            print("Eq:", constraint_set_to_string(C_equal))
-            print("Sub:", constraint_set_to_string(C_sub))
+
+            # print("Eq:", constraint_set_to_string(C_equal))
+            # print("Sub:", constraint_set_to_string(C_sub))
+
             o = {c.t1: AUX_GT.substitute_typeVarAs(Zs_fresh, ass, c.t2) for c in C_equal} | {c.t1: c.t2 for c in C_sub if type(c.t2) is FGJ.TypeVar} | {ai: zi for ai, zi in zip(ass, Zs_fresh)}
-            for k, v in sorted(o.items(), key=lambda t: t[0].name):
-                print(f"o[{k}] = {v}")
+
+            # for k, v in sorted(o.items(), key=lambda t: t[0].name):
+            #     print(f"o[{k}] = {v}")
+
             # all c from C_sub?
             assert len(Zs_fresh) == len(ass)
             # if no arguments are given can new typevars be neccessary?
             # y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {Z_fresh: AUX_GT.sub(Zs_fresh, ass, c.t2) for c in C_sub if type(c.t2) if FGJ.NonTypeVar}
             y: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {o[c.t1]: AUX_GT.substitute_typeVarAs(Zs_fresh, ass, c.t2) for c in C_sub if type(c.t2) is FGJ.NonTypeVar}
-            print("y:")
-            for k, v in y.items():
-                print(f"{k} <= {v}")
+
+            # print("y:")
+            # for k, v in y.items():
+            #     print(f"{k} <= {v}")
+
             yield o, y

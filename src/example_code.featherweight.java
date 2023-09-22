@@ -24,4 +24,3 @@ class Pair<X extends Int<>, Y extends Int<>> extends SomeMethods<> {
 }
 
 new Object()
-

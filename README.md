@@ -83,3 +83,5 @@ Ausblick: Nondeterm. -> Typechecker
 Beispiele: Wie funktionierts? + output beschreiben
 
 Nicht determinismus -> FJType how -> Type checker
+
+How to use (Maybe just in the readme)
