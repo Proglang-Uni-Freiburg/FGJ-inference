@@ -1,10 +1,11 @@
 import FGJ_AST as FGJ
 import FGJ_GT_AST as FGJ_GT
 
+from FGJ_typing_old import TypeClass
 from FGJ_GT_Type import FJType
 from FGJ_GT_Unify import Unify
 from frozendict import frozendict
-from FGJ_GT_auxiliary_functions import getTypeSigOf, NoSolutionFound
+from FGJ_GT_auxiliary_functions import getTypeSigOf, NoSolutionFound, right_form
 
 
 def TypeInference(Pi: FGJ.Pi, index: int, CT: FGJ.ClassTable) -> FGJ.Pi:
@@ -13,6 +14,7 @@ def TypeInference(Pi: FGJ.Pi, index: int, CT: FGJ.ClassTable) -> FGJ.Pi:
     class_def_list = list(CT.values())
     if index >= len(class_def_list):
         return Pi
+
     while True:
         class_def = class_def_list[index]
         ls, constraint = FJType(Pi, class_def, CT)  # constraint generation
@@ -29,8 +31,10 @@ def TypeInference(Pi: FGJ.Pi, index: int, CT: FGJ.ClassTable) -> FGJ.Pi:
 
         for sig, ysEps in unifys:
             try:
-                temp_pi = {class_header_method_tuple: [FGJ.MethodSign(getTypeSigOf(method_sign, ysEps, sig), [sig[ai] for ai in method_sign.types_of_arguments], sig[method_sign.return_type]) for method_sign in method_signs] for class_header_method_tuple, method_signs in ls.items() if method_signs not in Pi.values()}
-                # Typecheck temp_pi
+                # temp_pi = {class_header_method_tuple: [FGJ.MethodSign(getTypeSigOf(method_sign, ysEps, sig), [sig[ai] for ai in method_sign.types_of_arguments], sig[method_sign.return_type]) for method_sign in method_signs] for class_header_method_tuple, method_signs in ls.items() if method_signs not in Pi.values()}
+                temp_pi = {class_header_method_tuple: [FGJ.MethodSign(getTypeSigOf(method_sign, ysEps, sig), [sig[ai] for ai in method_sign.types_of_arguments], sig[method_sign.return_type]) for method_sign in method_signs if right_form(method_sign)] for class_header_method_tuple, method_signs in ls.items() if method_signs not in Pi.values()}
+                # Typecheck class dedinition
+
                 new_pi = TypeInference(Pi | temp_pi, index + 1, CT)
                 return new_pi
             except NoSolutionFound:

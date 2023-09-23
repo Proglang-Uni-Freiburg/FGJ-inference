@@ -40,6 +40,8 @@ def is_subtype(t1: FGJ.Type, t2: FGJ.Type, Delta: FGJ.Delta, CT: FGJ.ClassTable)
             return False
         case (FGJ.Type(), FGJ.Type()) if t1 == t2:
             return True
+        case (_, FGJ.TypeVar(_)):
+            return is_subtype(t1, Delta[t2], Delta, CT)
         case (FGJ.TypeVar(_), _):
             return is_subtype(Delta[t1], t2, Delta, CT)
         case (FGJ.NonTypeVar(t1_name, t1s), FGJ.NonTypeVar(_, _)):

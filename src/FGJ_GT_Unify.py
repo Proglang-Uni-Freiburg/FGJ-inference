@@ -279,7 +279,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
             continue
 
         # to preserve an ordering
-        oc_to_ord: dict[FGJ_GT.oc, list[list[FGJ_GT.EqualC | FGJ_GT.SubTypeC]]] = dict()
+        oc_to_ord: dict[FGJ_GT.oc, list[list[FGJ_GT.sc]]] = dict()
 
         # solving expandLB
         for lowerC, upperC, addSub in lowerupperBs:
@@ -292,7 +292,7 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
             # no order -> different solutions
             new_oc = frozenset(frozenset([FGJ_GT.EqualC(lowerC.t2, AUX.substitute_typeVars(cts.types, xs, ni))]) for ni in ns)
             if addSub:
-                # new_oc = {{=}, {=}} |= {{<}} -> {{=}, {=}, {<}}
+                # new_oc = {{=}, {=}} |= {{<}} -> {{<}, {=}, {=}
                 k = frozenset([frozenset([FGJ_GT.SubTypeC(lowerC.t2, lowerC.t1)])])
                 new_oc |= k
             oc_to_ord[new_oc] = [[FGJ_GT.EqualC(lowerC.t2, AUX.substitute_typeVars(cts.types, xs, ni))] for ni in ns]

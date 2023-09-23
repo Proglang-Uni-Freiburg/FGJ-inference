@@ -102,7 +102,7 @@ def typing_class(class_def: FGJ.ClassDef, Pi: FGJ.Pi, CT: FGJ.ClassTable):
     return Pi2
 
 
-def typing_program(CT: FGJ.ClassTable) -> FGJ.Pi:
+def typing_program(Pi: FGJ.Pi, CT: FGJ.ClassTable) -> FGJ.Pi:
     pii: FGJ.Pi = dict()
     for class_def in CT.values():
         pii |= typing_class(class_def, pii, CT)

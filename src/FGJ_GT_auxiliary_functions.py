@@ -298,6 +298,28 @@ def getTypeSigOf(method_sign: FGJ.MethodSign, ysEps: dict[FGJ.TypeVar, FGJ.NonTy
     return {tv: ysEps[tv] for tv in set_of_typevars if tv in ysEps}
 
 
+def right_form(method_sign: FGJ.MethodSign) -> bool:
+    """
+    True if method_sign = <>[ai,..] -> a
+    """
+    if contains_typevar(method_sign.return_type):
+        return False
+    for arg_type in method_sign.types_of_arguments:
+        if contains_typevar(arg_type):
+            return False
+    return True
+
+
+def contains_typevar(t: FGJ.Type) -> bool:
+    match t:
+        case FGJ_GT.TypeVarA():
+            return False
+        case FGJ.TypeVar():
+            return True
+        case FGJ.NonTypeVar(_, ts):
+            return any(contains_typevar(ti) for ti in ts)
+
+
 def allTypesIn(type: FGJ.Type) -> set[FGJ.TypeVar]:
     match type:
         case FGJ.TypeVar(_):
