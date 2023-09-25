@@ -258,7 +258,8 @@ def NonTypeVarToTypeVar_single(t: FGJ.Type, env: FGJ.Delta) -> FGJ.Type:
             return t
         case FGJ.TypeVar():
             return t
-        case FGJ.NonTypeVar(name, FrozenList()) if FGJ.TypeVar(name) in env:
+        #                                                                      vvvvvvvvvvvvvv - not nice bug fix !!!
+        case FGJ.NonTypeVar(name, FrozenList()) if FGJ.TypeVar(name) in env:  # or name[0] == "Z":
             return FGJ.TypeVar(name)
         case FGJ.NonTypeVar(name, ts):
             return FGJ.NonTypeVar(name, FrozenList(NonTypeVarToTypeVar_single(ti, env) for ti in ts))
@@ -281,20 +282,31 @@ def NonTypeVarToTypeVar(C: set[FGJ_GT.sc], env: FGJ.Delta) -> set[FGJ_GT.sc]:
 
 # only used in FGJ_GT (FGJ_GT is a beta version)
 def getTypeSigOf(method_sign: FGJ.MethodSign, ysEps: dict[FGJ.TypeVar, FGJ.NonTypeVar], sig: dict[FGJ_GT.TypeVarA, FGJ.TypeVar]) -> dict[FGJ.TypeVar, FGJ.NonTypeVar]:
-    set_of_typevars = allTypesIn(sig[method_sign.return_type])
-    for arg in method_sign.types_of_arguments:
-        set_of_typevars |= allTypesIn(sig[arg])
+    set_of_typevars = set()
+
+    # return type
+    set_of_typevars |= get_all_typevar(method_sign.return_type, sig)
+
+    # arguments type
+    for arg_type in method_sign.types_of_arguments:
+        set_of_typevars |= get_all_typevar(arg_type, sig)
+
+    # recursively go thorugh upper bounds
     changing = True
     while changing:
         changing = False
-        for typevar in set_of_typevars.copy():
-            if typevar not in ysEps:
+
+        for type_var in set_of_typevars.copy():
+            if type_var not in ysEps:
                 continue
-            upperB = ysEps[typevar]
-            allTypesInSet = allTypesIn(upperB)
-            if not allTypesInSet.issubset(set_of_typevars):
-                set_of_typevars |= allTypesIn(upperB)
+
+            bound = ysEps[type_var]
+
+            all_type_vars_in_bound = get_all_typevar(bound, sig)
+            if not all_type_vars_in_bound.issubset(set_of_typevars):
+                set_of_typevars |= all_type_vars_in_bound
                 changing = True
+
     return {tv: ysEps[tv] for tv in set_of_typevars if tv in ysEps}
 
 
@@ -320,17 +332,17 @@ def contains_typevar(t: FGJ.Type) -> bool:
             return any(contains_typevar(ti) for ti in ts)
 
 
-def allTypesIn(type: FGJ.Type) -> set[FGJ.TypeVar]:
+def get_all_typevar(type: FGJ.Type, sig: dict[FGJ_GT.TypeVarA, FGJ.TypeVar]) -> set[FGJ.TypeVar]:
     match type:
         case FGJ.TypeVar(_):
             return {type}
         case FGJ.NonTypeVar(_, types):
             out = set()
             for t in types:
-                out |= allTypesIn(t)
+                out |= get_all_typevar(t, sig)
             return out
-        case _:
-            return set()
+        case FGJ_GT.TypeVarA(_):
+            return get_all_typevar(sig[type], sig)
 
 
 def find_highest_b(b: str, C: set[FGJ_GT.sc]):

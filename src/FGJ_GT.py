@@ -18,21 +18,36 @@ def TypeInference(Pi: FGJ.Pi, index: int, CT: FGJ.ClassTable) -> FGJ.Pi:
     while True:
         class_def = class_def_list[index]
         ls, constraint = FJType(Pi, class_def, CT)  # constraint generation
+        print(">>", lambdas_to_string(ls))
+        print(">>", constraint_set_to_string(constraint))
 
         # print("Pi:")
         # for ms in Pi.values():
         #     print(ms)
         # print("constraints:", constraint_set_to_string(constraint))
 
-        unifys = [(sig, ysEps) for sig, ysEps in Unify(constraint, dict(class_def.generic_type_annotation.items()), CT)]  # constraint solving
+        # test- brings upper bound of type variables from overriden methods in scope
+        d = dict()
+        for class_header_tupled, method_sign_list in ls.items():
+            class_header, _ = class_header_tupled
+            if class_header.class_name == class_def.name:
+                for method_sign in method_sign_list:
+                    d |= method_sign.gen_typ_ano
+        print("d:", d)
+
+
+        unifys = [(sig, ysEps) for sig, ysEps in Unify(constraint, dict(class_def.generic_type_annotation.items()) | d, CT)]  # constraint solving
 
         if unifys == []:  # No solution found
             raise NoSolutionFound
 
         for sig, ysEps in unifys:
             try:
-                # temp_pi = {class_header_method_tuple: [FGJ.MethodSign(getTypeSigOf(method_sign, ysEps, sig), [sig[ai] for ai in method_sign.types_of_arguments], sig[method_sign.return_type]) for method_sign in method_signs] for class_header_method_tuple, method_signs in ls.items() if method_signs not in Pi.values()}
-                temp_pi = {class_header_method_tuple: [FGJ.MethodSign(getTypeSigOf(method_sign, ysEps, sig), [sig[ai] for ai in method_sign.types_of_arguments], sig[method_sign.return_type]) for method_sign in method_signs if right_form(method_sign)] for class_header_method_tuple, method_signs in ls.items() if method_signs not in Pi.values()}
+                # no function for typevar selection in gen typ ano
+                # temp_pi = {class_header_method_tuple: [FGJ.MethodSign(method_sign.gen_typ_ano | ysEps, [(ai if type(ai) is not FGJ_GT.TypeVarA else sig[ai]) for ai in method_sign.types_of_arguments], method_sign.return_type if type(method_sign.return_type) is not FGJ_GT.TypeVarA else sig[method_sign.return_type]) for method_sign in method_signs] for class_header_method_tuple, method_signs in ls.items() if class_header_method_tuple[0].class_name == class_def.name}
+                # uses function 'getTypeSigOf' to only get the neccessary type anos
+                # 'd' ???
+                temp_pi = {class_header_method_tuple: [FGJ.MethodSign(getTypeSigOf(method_sign, ysEps | d, sig), [(ai if type(ai) is not FGJ_GT.TypeVarA else sig[ai]) for ai in method_sign.types_of_arguments], method_sign.return_type if type(method_sign.return_type) is not FGJ_GT.TypeVarA else sig[method_sign.return_type]) for method_sign in method_signs] for class_header_method_tuple, method_signs in ls.items() if class_header_method_tuple[0].class_name == class_def.name}
                 # Typecheck class dedinition
 
                 new_pi = TypeInference(Pi | temp_pi, index + 1, CT)

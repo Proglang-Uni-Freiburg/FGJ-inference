@@ -402,7 +402,6 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
 
             # 'Z' is not allowed to occur already, do a check here or search for another
             Zs_fresh = [next(z_fresh) for _ in ass]
-            # why only X in C_sub? why not all T?
 
             # print("Eq:", constraint_set_to_string(C_equal))
             # print("Sub:", constraint_set_to_string(C_sub))
@@ -421,5 +420,10 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
             # print("y:")
             # for k, v in y.items():
             #     print(f"{k} <= {v}")
+
+            # Add new Type Variables to CT so their upper bounds are saved somewhere
+            # for zi, ni in y.items():
+            #     CT[zi.name] = FGJ.ClassDef(zi.name, dict(), ni, dict(), dict())
+            #
 
             yield o, y
