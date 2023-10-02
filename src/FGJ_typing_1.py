@@ -30,10 +30,11 @@ def TypeExpr(expr: FGJ.Expression, Delta: FGJ.Delta, Gamma: dict[FGJ.Variable, F
             if not AUX_T.is_well_formed(t, Delta, CT):
                 raise Exception(f"{t} is not well formed")
             typed_fields = AUX_T.fields(t, CT)
-            for parameter, field_type in zip(parameters, typed_fields.values()):
-                if not AUX_T.is_subtype(TypeExpr(parameter, Delta, Gamma, CT, Pi), field_type, Delta, CT):
+            types_of_parameters = [TypeExpr(parameter, Delta, Gamma, CT, Pi) for parameter in parameters]
+            for parameter, type_of_parameter, field_type in zip(parameters, types_of_parameters, typed_fields.values()):
+                if not AUX_T.is_subtype(type_of_parameter, field_type, Delta, CT):
                     raise Exception(f"{parameter} is not a subtype of {field_type}")
-            return t
+            return FGJ.NonTypeVar(t.name, FrozenList(types_of_parameters))
 
         case FGJ.Cast(t, e):
             t0 = TypeExpr(e, Delta, Gamma, CT, Pi)

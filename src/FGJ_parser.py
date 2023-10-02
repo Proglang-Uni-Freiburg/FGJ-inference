@@ -1,9 +1,8 @@
+import FGJ_AST as FGJ
+
 from lark import Lark
 from lark import Transformer
-
 from frozenlist import FrozenList
-
-import FGJ_AST as FGJ
 
 
 featherweight_gerneric_java_parser = Lark(r"""

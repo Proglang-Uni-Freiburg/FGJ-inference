@@ -1,87 +1,36 @@
 # FGJ-inference
-Type inference for FGJ
 
+This is an implementation of a global type inference algorithm for Featherweight Generic Java.
 
+A Featherweight Generic Java program only needs type annotation in class headers and for fields.
 
-Subtyping FGJ
+A formal definition and a description of this implementation can be found [here](https://github.com/Proglang-Uni-Freiburg/FGJ-inference/blob/main/thesis.pdf).
 
-In adapt Regel:
+## Usage
 
-|- C< X* > <: D< N* >
+The entrypoint to this package is the `FGJ_GT`.
 
-Implementiert durch Funktion mit Eingabe C, X*, D und Ausgabe N*
-Dabei ist X* Liste von frischen Typparametern.
+*DISCLAIMER: You may have to change `FGJ_GT` or `./FGJ_GT.py` to the full path. And/or change it so it fits your os.
 
+### Command line
 
-∆ ⊢ T <: T (S-REFL)
-∆ ⊢ S <: T ∆ ⊢ T <: U ∆ ⊢ S <: U (S-TRANS)
-∆ ⊢ X <: ∆(X) (S-VAR)
-class C <Y*◁ P*> ◁ C’{. . .} ∆ ⊢ C <: [T*/X*]N
+You can use the command line to execute the type inference algorithm directly on a file.
 
+```shell
+usage: python3 ./FGJ_GT.py [-h] [-o] inpath [outpath]
+```
 
-genericSupertype( C, T*, D ) =
-    C = D: return T*      (wegen S-REFL:     c< T* > <: c< T* >)
-    C != D:  Regel (S-CLASS)
-    class C< Y* ◁ P*  > ◁ C’< M* > {. . .}     -- in M* tauchen nur die Y*
-    ---- [[[ Return C’ < [T* / Y*]M* > ]]]
-    Return genericSupertype ( C’ , [T* / Y*]M* , D )
+positional arguments:
 
+    inpath             The file your FGJ program is in.
+    outpath            The file the output is printed in. If none given, the output is printed into the infile.
 
-C<T*> = D<U*> -> unsolvable - fehlt im Paper
+options:
 
-füge bei equals auch an=a1 hinzu, sollte keinen unterschied machen
+    -h, --help         Show the help message and exit
+    -o, --outpath      Print the output to the terminal.
 
-NEW QUESTIONS
-
-step 2 rule 3 ?
-
-step 3 remove add (T = a) why dont remove it
-
---
-
-subConstraint does not use it's first parameter
-
----
-
-duale rule for match and adopt - keep bigger one
-
-match:
-C<T> < a, D<V> < a          |- C<X> <: D<N>
-------------------
-C<T> < D<V>, D<V> < a
-
-adopt:
-C<T> < a, a <* b, D<U> < b
---------------------------
--//- + C<T> < b
-
-match does not need delta
-
-expandLB - check if subtype possible
- - add constraint C<T><D<U> and mark
-
-----
-
-Unify return o, ysEps
-
-what is ysEps - all possible ys with their bound?
-
-------------
-
-Structure BA
-
-Syntax
-
-AUX functions?
-
-Constraint Generation -> Implementation details
-
-Constraint Solving -> Implementation details
-
-Ausblick: Nondeterm. -> Typechecker
-
-Beispiele: Wie funktionierts? + output beschreiben
-
-Nicht determinismus -> FJType how -> Type checker
-
-How to use (Maybe just in the readme)
+To see the usage at anytime use:
+```shell
+$ python3 ./FGJ_GT.py --help
+```

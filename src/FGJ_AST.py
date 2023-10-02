@@ -16,8 +16,6 @@ class NonTypeVar(Type):
     def __post_init__(self):
         self.types.freeze()
 
-    # __eq__ -> name == name => types == types?
-
     def __str__(self):
         return self.name + "<" + ', '.join(str(t) for t in self.types) + ">"
 
@@ -75,11 +73,10 @@ class MethodLookup(Expression):
 @dataclass(frozen=True)
 class NewClass(Expression):
     type: NonTypeVar
-    # List of Types? new <Int,Int> Pair(new Int(), new Int())
     parameters: list[Expression]
 
     def __str__(self) -> str:
-        return f"new {str(self.type)}({', '.join(str(e) for e in self.parameters)})"
+        return f"new {str(self.type.name)}({', '.join(str(e) for e in self.parameters)})"
 
 
 @dataclass(frozen=True)
@@ -103,7 +100,7 @@ class MethodDef:
     body: Expression
 
     def __str__(self) -> str:
-        gta = "<" + ",".join(f"{k} <- {v}" for k, v in self.generic_type_annotation.items()) + "> " if self.generic_type_annotation else ""
+        gta = "<" + ", ".join(f"{k} extends {v}" for k, v in self.generic_type_annotation.items()) + "> " if self.generic_type_annotation else ""
         ret = str(self.return_type) + " " if self.return_type else ""
         out = f"{gta}{ret}{self.name}("
         out += ', '.join(f'{str(argument_type) + " " if argument_type else ""}{argument_name}' for argument_name, argument_type in self.typed_parameters.items())
@@ -117,14 +114,13 @@ class ClassDef:
     generic_type_annotation: GenTypeAno
     superclass: NonTypeVar
     typed_fields: FieldEnv
-    # constructor: Constructor
     methods: dict[str, MethodDef]
 
     def __str__(self) -> str:
         """
         Without Constructor
         """
-        gta = "<" + ",".join(f"{x} <- {y}" for x, y in self.generic_type_annotation.items()) + ">" if self.generic_type_annotation else ""
+        gta = "<" + ", ".join(f"{x} extends {y}" for x, y in self.generic_type_annotation.items()) + ">" if self.generic_type_annotation else ""
         out = f"class {self.name}{gta} extends {str(self.superclass)}" + " {"
         if self.typed_fields or self.methods:
             out += "\n"

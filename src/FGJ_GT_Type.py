@@ -21,11 +21,7 @@ def FJType(Pi: FGJ.Pi, class_def: FGJ.ClassDef, CT: FGJ.ClassTable) -> tuple[FGJ
         method_sign = AUX.mtype(method_def.name, class_def.superclass, CT, Pi)
         am = next(fresh_a)
         if method_sign:
-            # OWN NOT PROOFED YET
-            print(">", method_def.name, method_sign.gen_typ_ano)
             l0s[(class_header, method_def.name)] = [FGJ.MethodSign(dict(method_sign.gen_typ_ano.items()), method_sign.types_of_arguments, am)]
-            # original:
-            # l0s[(class_header, method_def.name)] = [FGJ.MethodSign(dict(method_sign.gen_typ_ano.items()), method_sign.types_of_arguments, am)]
             C0e |= frozenset([FGJ_GT.SubTypeC(am, method_sign.return_type)])
         else:
             ass: list[FGJ.Type] = [next(fresh_a) for _ in method_def.typed_parameters]

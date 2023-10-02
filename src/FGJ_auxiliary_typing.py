@@ -1,7 +1,7 @@
-from typing import Optional
 import FGJ_AST as FGJ
 import FGJ_GT_AST as FGJ_GT
 
+from typing import Optional
 from frozendict import frozendict
 from frozenlist import FrozenList
 
@@ -63,7 +63,6 @@ def is_well_formed(t: FGJ.Type, Delta: FGJ.Delta, CT: FGJ.ClassTable) -> bool:
         case FGJ.NonTypeVar(name, ts):
             # recursivley checking all Types in ts
             are_types_well_formed = all(is_well_formed(type, Delta, CT) for type in ts)
-            # pair types in ts and types in ns together
             class_def = CT[name]
             mapped = zip(class_def.generic_type_annotation.values(), ts)
             xs = list(class_def.generic_type_annotation.keys())
@@ -96,9 +95,8 @@ def mtype(method_name: str, c: FGJ.NonTypeVar, CT: FGJ.ClassTable, PI: FGJ.Pi) -
         case FGJ.NonTypeVar(name, ts) if method_name in CT[name].methods.keys():
             class_def = CT[name]
             gen_type_ano = class_def.generic_type_annotation
-            method_signature = list(PI[(FGJ.ClassHeader(class_def.name, frozendict(gen_type_ano.items())), method_name)])[0] # Why Set? Get a random ano? ???
+            method_signature = list(PI[(FGJ.ClassHeader(class_def.name, frozendict(gen_type_ano.items())), method_name)])[0]
             xs = list(gen_type_ano.keys())
-            # subted_gen_type_ano: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {sub(ts, xs, yi): sub(ts, xs, pi) for yi, pi in method_signature.gen_typ_ano.items()}
             subted_gen_type_ano: dict[FGJ.TypeVar, FGJ.NonTypeVar] = {yi: substitute_typeVars(ts, xs, pi) for yi, pi in method_signature.gen_typ_ano.items()}
             subted_arguments = [substitute_typeVars(ts, xs, ui) for ui in method_signature.types_of_arguments]
             subted_return_type = substitute_typeVars(ts, xs, method_signature.return_type)

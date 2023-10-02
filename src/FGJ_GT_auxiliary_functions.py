@@ -330,6 +330,7 @@ def contains_typevar(t: FGJ.Type) -> bool:
             return True
         case FGJ.NonTypeVar(_, ts):
             return any(contains_typevar(ti) for ti in ts)
+    raise Exception("CASES ARE EXHAUSTIV")
 
 
 def get_all_typevar(type: FGJ.Type, sig: dict[FGJ_GT.TypeVarA, FGJ.TypeVar]) -> set[FGJ.TypeVar]:
@@ -343,6 +344,7 @@ def get_all_typevar(type: FGJ.Type, sig: dict[FGJ_GT.TypeVarA, FGJ.TypeVar]) -> 
             return out
         case FGJ_GT.TypeVarA(_):
             return get_all_typevar(sig[type], sig)
+    raise Exception("CASES ARE EXHAUSTIV")
 
 
 def find_highest_b(b: str, C: set[FGJ_GT.sc]):
