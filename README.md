@@ -4,7 +4,7 @@ This is an implementation of a global type inference algorithm for Featherweight
 
 A Featherweight Generic Java program only needs type annotation in class headers and for fields.
 
-A formal definition and a description of this implementation can be found [here](https://github.com/Proglang-Uni-Freiburg/FGJ-inference/blob/main/thesis.pdf).
+A formal definition and a description of this implementation can be found [here](https://github.com/timpehoerig/Thesis/blob/main/thesis/thesis.pdf).
 
 ## Usage
 
