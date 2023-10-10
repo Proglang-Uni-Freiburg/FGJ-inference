@@ -24,7 +24,6 @@ def TypeInference(Pi: FGJ.Pi, index: int, CT: FGJ.ClassTable) -> FGJ.Pi:
                 for method_sign in method_sign_list:
                     d |= method_sign.gen_typ_ano
 
-
         unifys = [(sig, ysEps) for sig, ysEps in Unify(constraint, dict(class_def.generic_type_annotation.items()) | d, CT)]  # constraint solving
 
         if unifys == []:  # No solution found

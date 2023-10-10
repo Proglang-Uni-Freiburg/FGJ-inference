@@ -68,7 +68,7 @@ def typing_method(method_def: FGJ.MethodDef, class_def: FGJ.ClassDef, Pi: FGJ.Pi
             raise Exception(f"Returned type {s} is not subtype of {t}")
         name_of_superclass = class_def.superclass.name
         if name_of_superclass != "Object":
-            ysEps: FGJ.GenTypeAno = ... # infered
+            ysEps: FGJ.GenTypeAno = ...  # infered
             if not Aux.is_valid_method_override(method_def.name, class_def.superclass, FGJ.MethodSign(ysEps, ts, t), CT, Pi):
                 raise Exception("Not valid override")
 

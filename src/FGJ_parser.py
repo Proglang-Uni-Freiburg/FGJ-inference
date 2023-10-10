@@ -127,6 +127,8 @@ class TreeToFGJ(Transformer):
             case 2:
                 name, parameters = tc
                 list_of_types = FrozenList()
+            case _:
+                raise Exception("CANT GO HERE - TYPE CHECKER")
         return FGJ.NewClass(FGJ.NonTypeVar(name, list_of_types), parameters)
 
     def expression(self, te):
@@ -168,7 +170,7 @@ class TreeToFGJ(Transformer):
                 name, parameters, body = tmd
                 gta = dict()
                 return_type = None
-        if type(parameters) == list:
+        if type(parameters) is list:
             parameters = dict(map(lambda x: (x, None), parameters))
         return FGJ.MethodDef(gta, return_type, parameters, name, body)
 
@@ -182,11 +184,11 @@ class TreeToFGJ(Transformer):
             case _:
                 name, superclass_type, typed_fields, method_list = tcd
                 gta = dict()
-        if type(typed_fields) == list:
+        if type(typed_fields) is list:
             typed_fields = {name: None for name in typed_fields}
         return FGJ.ClassDef(name, gta, superclass_type, typed_fields, method_list)
 
-    def class_table(selc, ct):
+    def class_table(self, ct):
         return {c.name: c for c in ct}
 
     def program(self, tp):

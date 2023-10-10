@@ -197,7 +197,6 @@ def Unify(C: FGJ_GT.C, env: FGJ.Delta, CT: FGJ.ClassTable) -> Generator[tuple[di
                     if newlowerupperelem not in lowerupperBs:
                         lowerupperBs.append(newlowerupperelem)
 
-
             # 2 Arguments
             # 2
             # early break if no solution is possible in this constraint set (C_prime)
